@@ -213,7 +213,7 @@ function ofertas(){
       <div class="stat"><b>${D.counts.compare}</b><span>comparables entre cadenas</span></div>
       <div class="stat"><b>${D.counts.offers}</b><span>con ≥15% de descuento</span></div>
       <div class="stat"><b>${D.counts.drops}</b><span>bajadas en 48 h</span></div>
-      ${stores.map(s => `<div class="stat"><b>${h[s].blocked ? "⏸️" : h[s].products ? "✅" : "—"} ${esc(h[s].name)}</b><span>${h[s].products.toLocaleString("es-CL")} productos</span></div>`).join("")}
+      ${stores.map(s => `<div class="stat"><b>${h[s].blocked ? "⏸️" : h[s].products ? "✅" : "⏸️"} ${esc(h[s].name)}</b><span>${h[s].products ? h[s].products.toLocaleString("es-CL") + " productos" : "requiere nodo en Chile"}</span></div>`).join("")}
     </div>
     <div class="sec"><h2>⚡ Última hora</h2><span>bajadas reales vs. su propio historial</span></div>
     ${drops.length ? `<div class="grid">${drops.slice(0, 12).map(p => card(p, `<span class="tag r">↓${p._d.pct}% desde ${fmt(p._d.old)}</span>`)).join("")}</div>` : `<div class="empty">Aún sin bajadas: el historial se está formando (cada ventana suma datos).</div>`}

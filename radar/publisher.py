@@ -116,7 +116,11 @@ def export(st: Storage, out: Path, active_days: int = 3) -> dict:
         """SELECT p.product_key k, p.price new, (SELECT price FROM prices q WHERE q.product_key=p.product_key
                  AND q.id < p.id ORDER BY q.id DESC LIMIT 1) old, p.ts
            FROM prices p WHERE p.ts >= ?""", (since48,)):
-        if r["old"] and r["new"] and r["new"] < r["old"] and r["k"] in by_key:
+        cur = by_key.get(r["k"])
+        # solo bajadas VIGENTES (el precio actual sigue siendo el bajado) y una por producto
+        if (r["old"] and r["new"] and r["new"] < r["old"] and cur and cur["price"] == r["new"]
+                and cur["in_stock"]):
+            drops = [d for d in drops if d["k"] != r["k"]]
             drops.append({"k": r["k"], "old": r["old"], "new": r["new"], "ts": r["ts"],
                           "pct": round(100 * (1 - r["new"] / r["old"]), 1)})
     drops.sort(key=lambda d: -d["pct"])
@@ -155,7 +159,8 @@ def export(st: Storage, out: Path, active_days: int = 3) -> dict:
         "SELECT started, ended, runner, requests, products, changes, blocked FROM runs ORDER BY id DESC LIMIT 12")]
 
     data = {
-        "generated": now_iso(), "stores": STORE_NAMES, "health": health, "runs": runs,
+        "generated": now_iso(), "health": health, "runs": runs,
+        "stores": {s: n for s, n in STORE_NAMES.items() if health[s]["products"]},
         "counts": {"products": len(rows), "compare": len(compare), "offers": len(offers), "drops": len(drops)},
         "core": core, "compare": compare[:900], "offers": [r["key"] for r in offers[:800]],
         "drops": drops[:300],
