@@ -65,6 +65,8 @@ def main(argv: list[str] | None = None) -> int:
     w.add_argument("--minutes", type=float, default=12)
     w.add_argument("--only", help="lista de tiendas separadas por coma")
     sub.add_parser("stats")
+    pb = sub.add_parser("publish")
+    pb.add_argument("out", type=Path)
     for c in ("encrypt", "decrypt"):
         e = sub.add_parser(c)
         e.add_argument("src", type=Path)
@@ -99,6 +101,12 @@ def main(argv: list[str] | None = None) -> int:
         for row in st.db.execute("SELECT store, COUNT(*) n, SUM(ean IS NOT NULL AND ean<>'') e, "
                                  "MIN(price) mn, MAX(price) mx FROM products GROUP BY store"):
             print(dict(row))
+        st.close()
+        return 0
+    if a.cmd == "publish":
+        from .publisher import export
+        st = Storage(config.DB_PATH)
+        print("exportado:", export(st, a.out))
         st.close()
         return 0
     if a.cmd == "encrypt":

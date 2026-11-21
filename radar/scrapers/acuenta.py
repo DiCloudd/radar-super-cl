@@ -107,6 +107,6 @@ class AcuentaScraper(Scraper):
                     url=f"{self.base_url}/p/{p.get('slug')}" if p.get("slug") else self.base_url,
                     category=source.category,
                     in_stock=bool(p.get("isAvailable")) and (stock is None or stock > 0),
-                    marketplace=bool(p.get("seller")), promos=_promos(p),
+                    marketplace=bool(p.get("seller")), promos=_promos(p), alt_eans=eans[1:],
                 ))
         return res

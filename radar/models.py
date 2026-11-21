@@ -37,6 +37,7 @@ class Product:
     in_stock: bool = True
     marketplace: bool = False
     promos: list[Promo] = field(default_factory=list)
+    alt_eans: list[str] = field(default_factory=list)
     found_at: str = field(default_factory=now_iso)
 
     @property

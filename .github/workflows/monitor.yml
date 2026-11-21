@@ -65,6 +65,8 @@ jobs:
             git archive origin/gh-pages | tar -x -C /tmp/site
           fi
           cp data/radar.db.enc /tmp/site/db/radar.db.enc
+          cp dashboard/* /tmp/site/
+          python -m radar.main publish /tmp/site || echo "::warning::falló la exportación de la app"
           printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
           touch /tmp/site/.nojekyll
           cd /tmp/site

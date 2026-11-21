@@ -49,6 +49,9 @@ class Storage:
         self.db = sqlite3.connect(str(path))
         self.db.row_factory = sqlite3.Row
         self.db.executescript(SCHEMA)
+        cols = {r[1] for r in self.db.execute("PRAGMA table_info(products)")}
+        if "alt_eans" not in cols:   # migración: EAN alternativos (Acuenta trae varios)
+            self.db.execute("ALTER TABLE products ADD COLUMN alt_eans TEXT")
 
     def close(self) -> None:
         self.db.commit()
@@ -76,9 +79,11 @@ class Storage:
         ean = p.ean or (prev["ean"] if prev else None)   # el EAN no se pierde si el listado no lo trae
         self.db.execute(
             """INSERT INTO products(key,store,sku,name,brand,ean,url,image,category,net_content,price,
-                 list_price,card_price,unit_price,unit,in_stock,marketplace,promos,first_seen,last_seen,last_change)
-               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 list_price,card_price,unit_price,unit,in_stock,marketplace,promos,first_seen,last_seen,last_change,
+                 alt_eans)
+               VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                ON CONFLICT(key) DO UPDATE SET name=excluded.name, brand=excluded.brand, ean=excluded.ean,
+                 alt_eans=COALESCE(excluded.alt_eans, products.alt_eans),
                  url=excluded.url, image=excluded.image, category=COALESCE(products.category, excluded.category),
                  net_content=COALESCE(excluded.net_content, products.net_content), price=excluded.price,
                  list_price=excluded.list_price, card_price=excluded.card_price, unit_price=excluded.unit_price,
@@ -87,7 +92,7 @@ class Storage:
                  last_change=CASE WHEN ? THEN excluded.last_seen ELSE products.last_change END""",
             (p.key, p.store, p.sku, p.name, p.brand, ean, p.url, p.image, p.category, p.net_content,
              p.price, p.list_price, p.card_price, p.unit_price, p.unit, int(p.in_stock), int(p.marketplace),
-             promos, ts, ts, ts, int(changed)),
+             promos, ts, ts, ts, ",".join(p.alt_eans) or None, int(changed)),
         )
         if changed:
             self.db.execute(

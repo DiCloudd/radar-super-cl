@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f7f9" media="(prefers-color-scheme: light)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Radar Súper">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>Radar Súper</title>
+<style>
+:root{
+  --bg:#f6f7f9;--card:#fff;--ink:#14171c;--mut:#5d6573;--line:#e3e6eb;--acc:#0a7d4f;--acc2:#e6f4ee;
+  --warn:#b3261e;--warn2:#fdecea;--chip:#eef0f3;--sisa:#d6001c;--acu:#e2231a;--uni:#d62a2a;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1115;--card:#181b21;--ink:#e9ecf1;--mut:#9aa3b2;--line:#272b33;--acc:#3ddc97;--acc2:#163126;
+  --warn:#ff8a80;--warn2:#3a1d1b;--chip:#232730;--shadow:none}}
+:root[data-theme="dark"]{--bg:#0f1115;--card:#181b21;--ink:#e9ecf1;--mut:#9aa3b2;--line:#272b33;--acc:#3ddc97;
+  --acc2:#163126;--warn:#ff8a80;--warn2:#3a1d1b;--chip:#232730;--shadow:none}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(env(safe-area-inset-top) + 10px) 16px 0;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px}
+.top h1{font-size:19px;margin:0;flex:1;letter-spacing:-.2px}
+.top small{color:var(--mut);font-weight:400;font-size:12px;display:block}
+.iconbtn{background:var(--chip);border:0;color:var(--ink);border-radius:10px;padding:7px 10px;font-size:15px}
+nav{display:flex;gap:4px;overflow-x:auto;padding:10px 0 8px;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:none;border:0;background:transparent;color:var(--mut);padding:7px 11px;border-radius:999px;font-size:14px;font-weight:600}
+nav button.on{background:var(--ink);color:var(--bg)}
+main{padding:12px 16px calc(env(safe-area-inset-bottom) + 40px);max-width:980px;margin:0 auto}
+.sec{margin:18px 0 8px;display:flex;align-items:baseline;gap:8px}
+.sec h2{font-size:16px;margin:0}
+.sec span{color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;box-shadow:var(--shadow);cursor:pointer;min-width:0}
+.card img{width:64px;height:64px;object-fit:contain;border-radius:8px;background:#fff;flex:none}
+.card .b{min-width:0;flex:1}
+.nm{font-size:13.5px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pr{font-weight:800;font-size:17px;margin-top:3px}
+.pr s{color:var(--mut);font-weight:400;font-size:12.5px;margin-left:4px}
+.meta{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.tag{font-size:11px;padding:2px 6px;border-radius:6px;background:var(--chip);color:var(--mut);white-space:nowrap}
+.tag.g{background:var(--acc2);color:var(--acc);font-weight:700}
+.tag.r{background:var(--warn2);color:var(--warn);font-weight:700}
+.st{font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;color:#fff}
+.st.santaisabel{background:var(--sisa)}.st.acuenta{background:#1f5fa8}.st.unimarc{background:#c4161c}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+.stat b{font-size:20px;display:block}.stat span{color:var(--mut);font-size:12px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.filters input,.filters select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 9px;font-size:14px;min-width:0}
+.filters input[type=search]{flex:1 1 220px}
+.filters input[type=number]{width:96px}
+label.ck{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--mut)}
+.cmp{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--shadow)}
+.cmp .row{display:flex;align-items:center;gap:8px;padding:4px 0;border-top:1px dashed var(--line);font-size:14px}
+.cmp .row:first-of-type{border-top:0}
+.cmp .row .p{margin-left:auto;font-weight:700}
+.cmp .row.best .p{color:var(--acc)}
+.empty{color:var(--mut);padding:24px 4px;text-align:center}
+.btn{background:var(--ink);color:var(--bg);border:0;border-radius:10px;padding:9px 14px;font-weight:700;font-size:14px}
+.btn.s{background:var(--chip);color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--mut);font-weight:600}
+dialog{border:0;border-radius:18px;padding:0;width:min(560px,94vw);background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:16px}
+.dlg img{width:110px;height:110px;object-fit:contain;background:#fff;border-radius:10px}
+.more{display:block;margin:10px auto;}
+.ok{color:var(--acc)}.bad{color:var(--warn)}
+.note{color:var(--mut);font-size:12.5px}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1>🛒 Radar Súper <small id="upd">cargando…</small></h1>
+    <button class="iconbtn" id="card" title="Mostrar precio con tarjeta/club">💳</button>
+    <button class="iconbtn" id="theme" title="Tema">🌓</button>
+  </div>
+  <nav id="tabs">
+    <button data-t="ofertas" class="on">🔥 Ofertas</button>
+    <button data-t="comparar">🔀 Comparar</button>
+    <button data-t="canasta">🛒 Mi canasta</button>
+    <button data-t="todos">📋 Todos</button>
+    <button data-t="tiendas">🩺 Tiendas</button>
+    <button data-t="exportar">⬇️ Exportar</button>
+  </nav>
+</header>
+<main id="main"><div class="empty">Cargando datos…</div></main>
+
+<dialog id="dlg"><div class="dlg" id="dlgb"></div></dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const fmt = n => n == null ? "—" : "$" + Math.round(n).toLocaleString("es-CL");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("radar:" + k); return v == null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem("radar:" + k, JSON.stringify(v)); }catch{} }
+};
+let D = null, ALL = null, BY = {}, GROUP = {}, tab = store.get("tab", "ofertas"), showCard = store.get("card", false);
+
+// ---------- tema ----------
+function applyTheme(){ const t = store.get("theme", null); if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
+applyTheme();
+$("#theme").onclick = () => { const cur = store.get("theme", null); store.set("theme", cur === "dark" ? "light" : cur === "light" ? null : "dark"); applyTheme(); };
+$("#card").onclick = () => { showCard = !showCard; store.set("card", showCard); $("#card").style.outline = showCard ? "2px solid var(--acc)" : ""; render(); };
+$("#card").style.outline = showCard ? "2px solid var(--acc)" : "";
+
+// ---------- datos ----------
+async function load(){
+  const r = await fetch("data.json?t=" + Date.now()); D = await r.json();
+  BY = {}; for (const p of D.core) BY[p.k] = p;
+  GROUP = {}; D.compare.forEach((g, i) => g.keys.forEach(k => GROUP[k] = i));
+  const ago = Math.round((Date.now() - new Date(D.generated)) / 60000);
+  $("#upd").textContent = `actualizado hace ${ago < 1 ? "<1" : ago} min · ${D.counts.products.toLocaleString("es-CL")} productos`;
+  render();
+}
+async function loadAll(){
+  if (ALL) return ALL;
+  const r = await fetch("products.json?t=" + Date.now()); ALL = (await r.json()).products;
+  for (const p of ALL) if (!BY[p.k]) BY[p.k] = p;
+  return ALL;
+}
+const price = p => (showCard && p.c && p.c < p.p) ? p.c : p.p;
+const disc = p => p.l && p.l > p.p ? Math.round(100 * (1 - p.p / p.l)) : 0;
+const SN = s => (D && D.stores[s]) || s;
+
+function card(p, extra = ""){
+  const d = disc(p), cp = showCard && p.c && p.c < p.p;
+  const g = GROUP[p.k] != null ? D.compare[GROUP[p.k]] : null;
+  const cheapest = g && g.keys[0] === p.k;
+  return `<div class="card" data-k="${esc(p.k)}">
+    ${p.img ? `<img loading="lazy" src="${esc(p.img)}" alt="">` : ""}
+    <div class="b"><div class="nm">${esc(p.n)}</div>
+      <div class="pr">${fmt(price(p))}${p.l ? `<s>${fmt(p.l)}</s>` : ""}${cp ? ` <span class="tag">💳</span>` : ""}</div>
+      <div class="meta"><span class="st ${p.s}">${esc(SN(p.s))}</span>
+        ${d ? `<span class="tag g">-${d}%</span>` : ""}
+        ${p.u ? `<span class="tag">${fmt(p.u)}/${esc(p.un)}</span>` : ""}
+        ${!showCard && p.c ? `<span class="tag">💳 ${fmt(p.c)}</span>` : ""}
+        ${cheapest ? `<span class="tag g">🔀 más barato -${g.pct}%</span>` : ""}
+        ${p.st === 0 || p.st === false ? `<span class="tag r">agotado</span>` : ""}
+        ${(p.pr || []).slice(0,1).map(t => `<span class="tag">${esc(t)}</span>`).join("")}
+        ${extra}</div></div></div>`;
+}
+
+// ---------- filtros guardados ----------
+const F = Object.assign({q:"", store:"", cat:"", min:"", max:"", disc:"", stock:false, sort:"disc"}, store.get("filters", {}));
+function filtersHTML(withSort = true){
+  const cats = [...new Set((ALL || D.core).map(p => p.cat).filter(Boolean))].sort();
+  return `<div class="filters">
+    <input type="search" id="fq" placeholder="Buscar producto o marca…" value="${esc(F.q)}">
+    <select id="fs"><option value="">Todas las cadenas</option>${Object.entries(D.stores).map(([k,v]) => `<option value="${k}" ${F.store===k?"selected":""}>${v}</option>`).join("")}</select>
+    <select id="fc"><option value="">Todas las categorías</option>${cats.map(c => `<option ${F.cat===c?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <input type="number" id="fmin" placeholder="$ mín" value="${esc(F.min)}"><input type="number" id="fmax" placeholder="$ máx" value="${esc(F.max)}">
+    <input type="number" id="fd" placeholder="% dcto mín" value="${esc(F.disc)}">
+    ${withSort ? `<select id="fo"><option value="disc" ${F.sort==="disc"?"selected":""}>Mayor descuento</option><option value="price" ${F.sort==="price"?"selected":""}>Menor precio</option><option value="unit" ${F.sort==="unit"?"selected":""}>Menor $/unidad</option></select>` : ""}
+    <label class="ck"><input type="checkbox" id="fst" ${F.stock?"checked":""}> solo con stock</label></div>`;
+}
+function bindFilters(cb){
+  const upd = () => { F.q = $("#fq").value; F.store = $("#fs").value; F.cat = $("#fc").value; F.min = $("#fmin").value; F.max = $("#fmax").value;
+    F.disc = $("#fd").value; F.stock = $("#fst").checked; if ($("#fo")) F.sort = $("#fo").value; store.set("filters", F); cb(); };
+  ["#fq","#fs","#fc","#fmin","#fmax","#fd","#fst","#fo"].forEach(s => { const e = $(s); if (e) e.addEventListener(s === "#fq" ? "input" : "change", upd); });
+}
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+function applyF(list){
+  const words = norm(F.q).split(/\s+/).filter(Boolean);
+  let out = list.filter(p => (!F.store || p.s === F.store) && (!F.cat || p.cat === F.cat)
+    && (!F.min || price(p) >= +F.min) && (!F.max || price(p) <= +F.max) && (!F.disc || disc(p) >= +F.disc)
+    && (!F.stock || p.st !== 0) && words.every(w => norm(p.n + " " + (p.b || "") + " " + (p.e || "")).includes(w)));
+  const key = { disc: p => -disc(p), price: p => price(p), unit: p => p.u ?? 1e12 }[F.sort] || (p => -disc(p));
+  return out.sort((a, b) => key(a) - key(b));
+}
+function paged(list, id, n = 60){
+  let shown = n;
+  const draw = () => { $(id).innerHTML = list.length ? `<div class="grid">${list.slice(0, shown).map(p => card(p)).join("")}</div>`
+      + (list.length > shown ? `<button class="btn s more" id="${id.slice(1)}m">Ver más (${list.length - shown})</button>` : "")
+      : `<div class="empty">Nada por aquí con estos filtros.</div>`;
+    const m = $(id + "m"); if (m) m.onclick = () => { shown += n; draw(); }; };
+  draw();
+}
+
+// ---------- pestañas ----------
+function render(){
+  if (!D) return;
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === tab));
+  ({ofertas, comparar, canasta, todos, tiendas, exportar}[tab] || ofertas)();
+}
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; store.set("tab", tab); render(); window.scrollTo(0, 0); });
+
+function ofertas(){
+  const offers = D.offers.map(k => BY[k]).filter(Boolean);
+  const drops = D.drops.map(d => ({...BY[d.k], _d: d})).filter(p => p.k);
+  const cheaper = D.compare.slice(0, 60).map(g => BY[g.keys[0]]).filter(Boolean);
+  const cardp = D.core.filter(p => p.c && p.c < p.p).sort((a, b) => (a.c / a.p) - (b.c / b.p));
+  const h = D.health, stores = Object.keys(h);
+  $("#main").innerHTML = `
+    <div class="sec"><h2>✨ Resumen</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${D.counts.products.toLocaleString("es-CL")}</b><span>productos vigilados</span></div>
+      <div class="stat"><b>${D.counts.compare}</b><span>comparables entre cadenas</span></div>
+      <div class="stat"><b>${D.counts.offers}</b><span>con ≥15% de descuento</span></div>
+      <div class="stat"><b>${D.counts.drops}</b><span>bajadas en 48 h</span></div>
+      ${stores.map(s => `<div class="stat"><b>${h[s].blocked ? "⏸️" : h[s].products ? "✅" : "—"} ${esc(h[s].name)}</b><span>${h[s].products.toLocaleString("es-CL")} productos</span></div>`).join("")}
+    </div>
+    <div class="sec"><h2>⚡ Última hora</h2><span>bajadas reales vs. su propio historial</span></div>
+    ${drops.length ? `<div class="grid">${drops.slice(0, 12).map(p => card(p, `<span class="tag r">↓${p._d.pct}% desde ${fmt(p._d.old)}</span>`)).join("")}</div>` : `<div class="empty">Aún sin bajadas: el historial se está formando (cada ventana suma datos).</div>`}
+    <div class="sec"><h2>🔀 Más barato que en otras cadenas</h2><span>mismo EAN</span></div>
+    <div class="grid">${cheaper.slice(0, 12).map(p => card(p)).join("")}</div>
+    <div class="sec"><h2>💳 Con tarjeta / club</h2></div>
+    ${cardp.length ? `<div class="grid">${cardp.slice(0, 9).map(p => card(p)).join("")}</div>` : `<div class="empty">Sin precios exclusivos por ahora.</div>`}
+    <div class="sec"><h2>📋 Todas las ofertas</h2><span>descuento declarado por la tienda (ojo: el "normal" puede estar inflado)</span></div>
+    ${filtersHTML()}<div id="ol"></div>
+    <p class="note">🏆 Errores de precio, 🤡 ofertas falsas y alertas por Telegram llegan en las próximas fases.</p>`;
+  const draw = () => paged(applyF(offers), "#ol");
+  bindFilters(draw); draw();
+}
+
+function comparar(){
+  $("#main").innerHTML = `<div class="sec"><h2>🔀 Comparador</h2><span>${D.compare.length} productos idénticos (mismo EAN) en ≥2 cadenas</span></div>
+    <div class="filters"><input type="search" id="cq" placeholder="Filtrar (ej. pañales, shampoo, pollo)…" value="${esc(store.get("cq",""))}"></div>
+    <div id="cl" class="grid"></div>
+    <p class="note">Solo se compara cuando el código de barras coincide. Grupos con diferencias >2,5× se ocultan por seguridad.</p>`;
+  const draw = () => {
+    const w = norm($("#cq").value).split(/\s+/).filter(Boolean); store.set("cq", $("#cq").value);
+    const gs = D.compare.filter(g => w.every(x => g.keys.some(k => norm(BY[k]?.n).includes(x)))).slice(0, 120);
+    $("#cl").innerHTML = gs.map(g => { const ps = g.keys.map(k => BY[k]).filter(Boolean).sort((a, b) => price(a) - price(b));
+      return `<div class="cmp"><div class="nm" style="font-weight:600">${esc(ps[0].n)}</div>
+        ${ps.map((p, i) => `<div class="row ${i===0?"best":""}" data-k="${esc(p.k)}"><span class="st ${p.s}">${esc(SN(p.s))}</span>
+          ${p.u ? `<span class="tag">${fmt(p.u)}/${esc(p.un)}</span>` : ""}${p.st===0?`<span class="tag r">agotado</span>`:""}
+          <span class="p">${fmt(price(p))}</span></div>`).join("")}
+        <div class="meta"><span class="tag g">ahorras ${fmt(price(ps[ps.length-1]) - price(ps[0]))}</span>
+        <button class="btn s" style="margin-left:auto;padding:4px 10px" data-add="${esc(ps[0].k)}">+ canasta</button></div></div>`; }).join("") || `<div class="empty">Sin resultados.</div>`;
+  };
+  $("#cq").oninput = draw; draw();
+}
+
+// ---------- canasta ----------
+const basket = () => store.get("basket", []);
+function addBasket(k){ const b = basket(); if (!b.includes(k)) { b.push(k); store.set("basket", b); } toast("Agregado a tu canasta"); }
+function canasta(){
+  const items = basket().map(k => BY[k]).filter(Boolean);
+  const stores = Object.keys(D.stores);
+  const tot = Object.fromEntries(stores.map(s => [s, {sum: 0, n: 0}]));
+  const rows = items.map(p => {
+    const g = GROUP[p.k] != null ? D.compare[GROUP[p.k]].keys.map(k => BY[k]).filter(Boolean) : [p];
+    const per = Object.fromEntries(g.map(x => [x.s, x]));
+    stores.forEach(s => { if (per[s]) { tot[s].sum += price(per[s]); tot[s].n++; } });
+    return {p, per};
+  });
+  const complete = stores.filter(s => tot[s].n === items.length && items.length);
+  const best = complete.sort((a, b) => tot[a].sum - tot[b].sum)[0];
+  const mixSum = rows.reduce((a, r) => a + Math.min(...Object.values(r.per).map(price)), 0);
+  $("#main").innerHTML = `<div class="sec"><h2>🛒 Mi canasta</h2><span>${items.length} productos · se guarda en tu teléfono</span></div>
+    ${items.length ? `<div class="stats">${stores.map(s => `<div class="stat"><b>${tot[s].n ? fmt(tot[s].sum) : "—"}</b><span>${esc(SN(s))} · ${tot[s].n}/${items.length} productos${s===best?" · 🏆 más barata completa":""}</span></div>`).join("")}
+      <div class="stat"><b>${fmt(mixSum)}</b><span>comprando cada cosa donde está más barata</span></div></div>
+      ${best ? `<p class="ok">Comprando todo en <b>${esc(SN(best))}</b> pagas ${fmt(tot[best].sum)}.</p>` : `<p class="note">Ninguna cadena tiene todos los productos; mira el total mixto.</p>`}
+      <table><tr><th>Producto</th>${stores.map(s => `<th>${esc(SN(s))}</th>`).join("")}<th></th></tr>
+      ${rows.map(r => { const m = Math.min(...Object.values(r.per).map(price)); return `<tr><td>${esc(r.p.n)}</td>${stores.map(s => `<td class="${r.per[s] && price(r.per[s])===m?"ok":""}">${r.per[s] ? fmt(price(r.per[s])) : "—"}</td>`).join("")}<td><button class="btn s" data-del="${esc(r.p.k)}">✕</button></td></tr>`; }).join("")}</table>`
+    : `<div class="empty">Tu canasta está vacía. Agrega productos desde 🔀 Comparar o desde la ficha de cualquier producto.</div>`}`;
+}
+
+async function todos(){
+  $("#main").innerHTML = `<div class="sec"><h2>📋 Todos los productos</h2><span id="tc">cargando catálogo completo…</span></div><div id="tf"></div><div id="tl"></div>`;
+  const all = await loadAll();
+  if (tab !== "todos") return;
+  $("#tc").textContent = all.length.toLocaleString("es-CL") + " productos";
+  $("#tf").innerHTML = filtersHTML();
+  const draw = () => paged(applyF(all), "#tl");
+  bindFilters(draw); draw();
+}
+
+function tiendas(){
+  const h = D.health;
+  $("#main").innerHTML = `<div class="sec"><h2>🩺 Salud de las tiendas</h2></div>
+    ${Object.entries(h).map(([s, x]) => `<div class="cmp" style="margin-bottom:10px">
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ${s}">${esc(x.name)}</span>
+      <b>${x.blocked ? "⏸️ en pausa: " + esc(x.blocked.reason) : x.products ? "✅ funcionando" : s === "unimarc" ? "⏸️ bloquea la nube (requiere nodo en Chile)" : "—"}</b>
+      <span class="note" style="margin-left:auto">${x.products.toLocaleString("es-CL")} productos · ${x.with_ean.toLocaleString("es-CL")} con EAN</span></div>
+      ${x.sources.length ? `<table><tr><th>Fuente</th><th>Última OK</th><th>Prod.</th><th>Error</th></tr>${x.sources.map(r => `<tr><td>${esc(r.source)}</td><td>${r.last_ok ? new Date(r.last_ok).toLocaleString("es-CL") : "—"}</td><td>${r.last_count ?? "—"}</td><td class="bad">${esc(r.last_error || "")}</td></tr>`).join("")}</table>` : ""}
+    </div>`).join("")}
+    <div class="sec"><h2>⏱️ Últimas ventanas</h2></div>
+    <table><tr><th>Inicio</th><th>Peticiones</th><th>Lecturas</th><th>Cambios</th><th>Bloqueos</th></tr>
+    ${D.runs.map(r => `<tr><td>${new Date(r.started).toLocaleString("es-CL")}</td><td>${r.requests ?? "—"}</td><td>${r.products ?? "—"}</td><td>${r.changes ?? "—"}</td><td>${esc(r.blocked || "")}</td></tr>`).join("")}</table>
+    <p class="note">Tottus (Cloudflare) y Lider (PerimeterX) bloquean a clientes automáticos y no se evaden protecciones.</p>`;
+}
+
+async function exportar(){
+  $("#main").innerHTML = `<div class="sec"><h2>⬇️ Exportar</h2></div>
+    <p>Descarga en CSV (se abre en Excel).</p>
+    <p><button class="btn" id="e1">Ofertas y comparables</button> <button class="btn s" id="e2">Catálogo completo</button>
+    <button class="btn s" id="e3">Mi canasta</button></p>`;
+  const csv = (list, name) => {
+    const cols = ["cadena","producto","marca","ean","precio","precio_normal","precio_tarjeta","precio_unidad","unidad","stock","categoria","url"];
+    const lines = [cols.join(";")].concat(list.map(p => [SN(p.s), p.n, p.b, p.e, p.p, p.l, p.c, p.u ? Math.round(p.u) : "", p.un, p.st === 0 ? "no" : "si", p.cat, p.url]
+      .map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")));
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob(["﻿" + lines.join("\n")], {type: "text/csv"}));
+    a.download = name; a.click(); };
+  $("#e1").onclick = () => csv(D.core, "radar-ofertas.csv");
+  $("#e2").onclick = async () => csv(await loadAll(), "radar-catalogo.csv");
+  $("#e3").onclick = () => csv(basket().map(k => BY[k]).filter(Boolean), "radar-canasta.csv");
+}
+
+// ---------- ficha ----------
+let chart = null;
+function openProduct(k){
+  const p = BY[k]; if (!p) return;
+  const g = GROUP[k] != null ? D.compare[GROUP[k]].keys.map(x => BY[x]).filter(Boolean) : [];
+  const hs = (p.h || []).map(x => x[1]);
+  $("#dlgb").innerHTML = `<div style="display:flex;gap:12px">${p.img ? `<img src="${esc(p.img)}" alt="">` : ""}
+    <div><div style="font-weight:700">${esc(p.n)}</div><div class="note">${esc(p.b || "")} ${p.e ? "· EAN " + esc(p.e) : ""}</div>
+    <div class="pr" style="font-size:22px">${fmt(p.p)}${p.l ? `<s>${fmt(p.l)}</s>` : ""}</div>
+    <div class="meta"><span class="st ${p.s}">${esc(SN(p.s))}</span>${p.u ? `<span class="tag">${fmt(p.u)}/${esc(p.un)}</span>` : ""}${p.c ? `<span class="tag">💳 ${fmt(p.c)}</span>` : ""}${(p.pr||[]).map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div></div></div>
+    ${hs.length > 1 ? `<div class="note" style="margin-top:10px">Mínimo ${fmt(Math.min(...hs))} · Máximo ${fmt(Math.max(...hs))}</div><canvas id="ch" height="150"></canvas>` : `<p class="note">Historial en formación (visto desde ${esc(p.f || "")}).</p>`}
+    ${g.length > 1 ? `<div class="sec"><h2>En otras cadenas</h2></div><div class="cmp">${g.sort((a,b)=>a.p-b.p).map((x,i) => `<div class="row ${i===0?"best":""}"><span class="st ${x.s}">${esc(SN(x.s))}</span><a href="${esc(x.url)}" target="_blank" rel="noopener" class="note">${esc(x.n.slice(0,50))}</a><span class="p">${fmt(x.p)}</span></div>`).join("")}</div>` : ""}
+    <p style="display:flex;gap:8px;margin-top:14px"><a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Ver en la tienda</a>
+    <button class="btn s" data-add="${esc(p.k)}">+ canasta</button><button class="btn s" style="margin-left:auto" onclick="dlg.close()">Cerrar</button></p>`;
+  const dlg = $("#dlg"); dlg.showModal();
+  if (chart) { chart.destroy(); chart = null; }
+  if (hs.length > 1 && window.Chart) {
+    const css = getComputedStyle(document.documentElement);
+    chart = new Chart($("#ch"), {type: "line", data: {labels: p.h.map(x => x[0].replace("T", " ")), datasets: [{data: hs, stepped: true, borderColor: css.getPropertyValue("--acc").trim(), pointRadius: 2}]},
+      options: {plugins: {legend: {display: false}}, scales: {x: {ticks: {maxTicksLimit: 4, color: css.getPropertyValue("--mut").trim()}}, y: {ticks: {color: css.getPropertyValue("--mut").trim(), callback: v => fmt(v)}}}}});
+  }
+}
+function toast(t){ const d = document.createElement("div"); d.textContent = t;
+  d.style.cssText = "position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:10px;z-index:99;font-weight:600";
+  document.body.appendChild(d); setTimeout(() => d.remove(), 1600); }
+document.addEventListener("click", e => {
+  const add = e.target.closest("[data-add]"); if (add) { e.stopPropagation(); addBasket(add.dataset.add); return; }
+  const del = e.target.closest("[data-del]"); if (del) { store.set("basket", basket().filter(k => k !== del.dataset.del)); render(); return; }
+  const c = e.target.closest(".card[data-k], .cmp .row[data-k]"); if (c && !e.target.closest("a")) openProduct(c.dataset.k);
+});
+$("#dlg").addEventListener("click", e => { if (e.target.id === "dlg") e.target.close(); });
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+load().catch(e => { $("#main").innerHTML = `<div class="empty">No se pudieron cargar los datos (${esc(e.message)}).</div>`; });
+</script>
+</body>
+</html>
