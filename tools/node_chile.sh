@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 . .venv/bin/activate
 export MONITOR_RUNNER=chile
 export RADAR_DB="$PWD/data/chile.db"
-STORES="${NODE_STORES:-unimarc}"
+STORES="${NODE_STORES:-unimarc,alvi}"
 ORIGIN="$(git remote get-url origin)"
 OUT="${TMPDIR:-/tmp}/radar-node"
 mkdir -p data "$OUT"

@@ -47,9 +47,9 @@ def test_sources_toml_valid():
     srcs = load_sources()
     names = [s.name for s in srcs]
     assert len(names) == len(set(names))
-    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc", "lider"}
+    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc", "lider", "jumbo", "alvi"}
     cloud = load_sources(runner="cloud")
-    assert not [s for s in cloud if s.store == "unimarc"], "Unimarc no debe correr en la nube"
+    assert not [s for s in cloud if s.store in ("unimarc", "alvi")], "SMU no debe correr en la nube"
 
 
 class FakeResp:

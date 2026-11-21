@@ -139,6 +139,27 @@ def test_lider_fields(lider):
     assert all(not x.marketplace for x in lider.products[:5])
 
 
+# ---------------- Jumbo (plataforma Santa Isabel) ----------------
+def test_jumbo_reuses_cencosud_parser():
+    s = src("jumbo", "https://www.jumbo.cl/despensa?orderBy=OrderByPriceASC")
+    res = SCRAPERS["jumbo"].parse_listing(load("jumbo_list.html.gz"), s)
+    assert len(res.products) == 40 and not res.warnings
+    p = res.products[0]
+    assert p.store == "jumbo" and p.url.startswith("https://www.jumbo.cl/") and p.url.endswith("/p")
+
+
+# ---------------- Alvi (plataforma Unimarc) ----------------
+def test_alvi_parser_with_wholesale_steps():
+    s = src("alvi", "https://www.alvi.cl/category/abarrotes?orderBy=OrderByPriceASC")
+    res = SCRAPERS["alvi"].parse_listing(load("alvi_list.html.gz"), s)
+    assert len(res.products) == 50 and res.total == 950
+    p = next(x for x in res.products if x.ean == "7807975012464")
+    assert p.price == 890 and p.unit == "kg"
+    steps = [x for x in p.promos if x.kind == "mxn"]
+    assert [(x.min_qty, x.unit_price) for x in steps] == [(3, 850), (6, 810)]
+    assert "nameComplete" not in p.name and p.name.startswith("Atún lomito")
+
+
 # ---------------- Unimarc ----------------
 @pytest.fixture(scope="module")
 def unimarc():

@@ -21,10 +21,11 @@ from .units import parse_content, unit_price
 
 CORE_MAX = 3000
 HIST_POINTS = 60
-STORE_NAMES = {"lider": "Lider", "santaisabel": "Santa Isabel", "acuenta": "Acuenta",
-               "unimarc": "Unimarc", "tottus": "Tottus"}
+STORE_NAMES = {"lider": "Lider", "jumbo": "Jumbo", "santaisabel": "Santa Isabel", "acuenta": "Acuenta",
+               "unimarc": "Unimarc", "alvi": "Alvi", "tottus": "Tottus"}
 STORE_NOTES = {
     "unimarc": "Bloquea las IPs de GitHub (Akamai). Se integra con el nodo opcional en Chile.",
+    "alvi": "Mayorista SMU. Bloquea las IPs de GitHub (Akamai). Se integra con el nodo opcional en Chile.",
     "tottus": "Cloudflare bloquea a todo navegador automatizado; integrarla exigiría evadir protecciones.",
 }
 

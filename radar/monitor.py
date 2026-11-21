@@ -200,7 +200,7 @@ class Monitor:
             self.st.set_meta(f"rr:{store}", rr)
             await self.crawl_step(src)
             steps += 1
-            if store == "santaisabel" and steps % 2 == 0:
+            if store in ("santaisabel", "jumbo") and steps % 2 == 0:
                 await self.enrich_ean(store, 1)
 
     def in_cooldown(self, src: Source) -> bool:

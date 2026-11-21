@@ -8,9 +8,13 @@ GitHub Actions (ventanas de ~12 min encadenadas) y guarda la BD cifrada en la ra
 | Cadena | Fuente | Nube (Actions) | Nodo Chile |
 |---|---|---|---|
 | Lider | `__NEXT_DATA__` de /browse/ (EAN desde usItemId) | ✅ best-effort (pausa si aparece PerimeterX) | ✅ |
+| Jumbo | mismo extractor que Santa Isabel (Cencosud) | ✅ | ✅ |
 | Santa Isabel | payload RSC de categoría + EAN desde la ficha | ✅ | ✅ |
 | Acuenta | payload RSC (Instaleap), trae EAN | ✅ | ✅ |
 | Unimarc | `__NEXT_DATA__`, trae EAN | ⏸️ Akamai 403 a IPs de GitHub | ✅ `tools/node_chile.sh` |
+| Alvi (mayorista) | mismo extractor que Unimarc (SMU) + precios por cantidad | ⏸️ Akamai 403 | ✅ `tools/node_chile.sh` |
+| Super10 | solo catálogo de ofertas para socios (sin catálogo completo) | — | posible a futuro |
+| Cugat | — | ❌ Cloudflare | — |
 | Tottus | — | ❌ Cloudflare bloquea todo navegador automatizado | ❌ (requeriría evasión) |
 
 Comparación entre cadenas: EAN primero; si no hay, marca + contenido exacto + nombre casi idéntico
@@ -27,7 +31,7 @@ python -m radar.main stats
 python -m pytest -q
 ```
 
-## Nodo opcional en Chile (para Unimarc)
+## Nodo opcional en Chile (para Unimarc y Alvi)
 
 Unimarc bloquea las IPs de GitHub pero responde normal desde Chile. Un PC viejo o un
 Android con Termux puede correr el mismo monitor solo para Unimarc:

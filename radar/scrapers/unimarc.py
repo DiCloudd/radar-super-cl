@@ -20,6 +20,7 @@ _PPUM = re.compile(r"\$\s*([\d.]+)\s*x\s*(kg|lt|l|un|ml|g)", re.I)
 class UnimarcScraper(Scraper):
     store = "unimarc"
     base_url = "https://www.unimarc.cl"
+    name_field = "nameComplete"
 
     def page_url(self, source: Source, page: int) -> str:
         u = urlparse(source.url)
@@ -82,7 +83,7 @@ class UnimarcScraper(Scraper):
         imgs = p.get("images") or []
         stock_q = s.get("availableQuantity")
         return Product(
-            store=self.store, sku=str(p.get("itemId") or p.get("sku")), name=p.get("nameComplete") or p.get("name", ""),
+            store=self.store, sku=str(p.get("itemId") or p.get("sku")), name=p.get(self.name_field) or p.get("name", ""),
             price=public_price, list_price=lp if lp and lp > public_price else None,
             card_price=card_price, unit_price=unit_price, unit=unit, net_content=p.get("netContent") or None,
             ean=(p.get("ean") or None), brand=p.get("brand"), image=imgs[0] if imgs else None,

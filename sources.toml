@@ -15,6 +15,15 @@ max_pages = 40
 runners = ["cloud", "chile", "local"]
 max_pages = 25
 
+[store_defaults.jumbo]
+runners = ["cloud", "chile", "local"]
+max_pages = 80
+
+[store_defaults.alvi]
+# mayorista SMU: Akamai bloquea las IPs de GitHub (403) -> solo nodo Chile
+runners = ["chile", "local"]
+max_pages = 40
+
 [store_defaults.unimarc]
 # Akamai bloquea las IPs de GitHub (403): solo nodo en Chile
 runners = ["chile", "local"]
@@ -442,3 +451,194 @@ name = "lider-cereales"
 store = "lider"
 category = "despensa"
 url = "https://www.lider.cl/browse/despensa-y-panader-a/avenas-y-cereales/1473433_70936805?sort=price_low"
+
+# ───────────────────────── Jumbo (nube; misma plataforma que Santa Isabel) ─────────────────────────
+
+[[source]]
+name = "jumbo-licores"
+store = "jumbo"
+category = "licores"
+url = "https://www.jumbo.cl/licores-bebidas-y-aguas?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "jumbo-cuidado-personal"
+store = "jumbo"
+category = "cuidado personal"
+url = "https://www.jumbo.cl/belleza-y-cuidado-personal?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "jumbo-bebe"
+store = "jumbo"
+category = "bebés"
+url = "https://www.jumbo.cl/bebe-y-jugueteria?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "jumbo-limpieza"
+store = "jumbo"
+category = "limpieza"
+url = "https://www.jumbo.cl/limpieza?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "jumbo-carnes"
+store = "jumbo"
+category = "carnes"
+url = "https://www.jumbo.cl/carnes-y-pescados?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "jumbo-despensa"
+store = "jumbo"
+category = "despensa"
+url = "https://www.jumbo.cl/despensa?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "jumbo-lacteos"
+store = "jumbo"
+category = "lácteos"
+url = "https://www.jumbo.cl/lacteos-huevos-y-congelados?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "jumbo-quesos-fiambres"
+store = "jumbo"
+category = "lácteos"
+url = "https://www.jumbo.cl/quesos-y-fiambres?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 3
+fast_offset = 1
+
+[[source]]
+name = "jumbo-snacks"
+store = "jumbo"
+category = "despensa"
+url = "https://www.jumbo.cl/chocolates-galletas-y-snacks?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 3
+fast_offset = 2
+
+[[source]]
+name = "jumbo-mascotas"
+store = "jumbo"
+category = "mascotas"
+url = "https://www.jumbo.cl/mascotas?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "jumbo-frutas-verduras"
+store = "jumbo"
+category = "frutas y verduras"
+url = "https://www.jumbo.cl/frutas-y-verduras?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "jumbo-panaderia"
+store = "jumbo"
+category = "despensa"
+url = "https://www.jumbo.cl/panaderia-y-pasteleria?orderBy=OrderByPriceASC"
+
+# ───────────────────────── Alvi (mayorista SMU; solo nodo Chile) ─────────────────────────
+
+[[source]]
+name = "alvi-abarrotes"
+store = "alvi"
+category = "despensa"
+url = "https://www.alvi.cl/category/abarrotes?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "alvi-licores"
+store = "alvi"
+category = "licores"
+url = "https://www.alvi.cl/category/cervezas-vinos-y-licores?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "alvi-bebidas"
+store = "alvi"
+category = "bebidas"
+url = "https://www.alvi.cl/category/bebidas?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 3
+fast_offset = 1
+
+[[source]]
+name = "alvi-aseo"
+store = "alvi"
+category = "limpieza"
+url = "https://www.alvi.cl/category/aseo-y-limpieza?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "alvi-cuidado-personal"
+store = "alvi"
+category = "cuidado personal"
+url = "https://www.alvi.cl/category/cuidado-e-higiene-personal?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "alvi-bebe"
+store = "alvi"
+category = "bebés"
+url = "https://www.alvi.cl/category/mundo-bebe?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "alvi-lacteos"
+store = "alvi"
+category = "lácteos"
+url = "https://www.alvi.cl/category/lacteos-refrigerados-y-huevos?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "alvi-fiambreria"
+store = "alvi"
+category = "lácteos"
+url = "https://www.alvi.cl/category/fiambreria?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "alvi-carniceria"
+store = "alvi"
+category = "carnes"
+url = "https://www.alvi.cl/category/carniceria?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "alvi-congelados"
+store = "alvi"
+category = "congelados"
+url = "https://www.alvi.cl/category/congelados?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "alvi-snacks"
+store = "alvi"
+category = "despensa"
+url = "https://www.alvi.cl/category/confiteria-y-snacks?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "alvi-mascotas"
+store = "alvi"
+category = "mascotas"
+url = "https://www.alvi.cl/category/mascotas?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "alvi-frutas-verduras"
+store = "alvi"
+category = "frutas y verduras"
+url = "https://www.alvi.cl/category/frutas-y-verduras?orderBy=OrderByPriceASC"
