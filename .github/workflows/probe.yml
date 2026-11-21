@@ -1,0 +1,32 @@
+name: probe
+
+on:
+  workflow_dispatch:
+    inputs:
+      urls:
+        description: "URLs separadas por espacio (vacío = tools/probe_urls.txt)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "httpx[http2]"
+      - name: Probar tiendas desde la nube
+        env:
+          PROBE_URLS: ${{ inputs.urls }}
+        run: python tools/probe.py probe_out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: probe-html
+          path: probe_out
+          retention-days: 7

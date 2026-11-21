@@ -1,0 +1,14 @@
+https://www.lider.cl/robots.txt
+https://www.lider.cl/
+https://www.unimarc.cl/robots.txt
+https://www.unimarc.cl/category/despensa?orderBy=OrderByPriceASC
+https://www.unimarc.cl/category/despensa?orderBy=OrderByPriceASC&page=2
+https://bff-unimarc-ecommerce.unimarc.cl/robots.txt
+https://www.acuenta.cl/robots.txt
+https://www.acuenta.cl/ca/despensa/05?sort=2
+https://nextgentheadless.instaleap.io/robots.txt
+https://www.tottus.cl/robots.txt
+https://www.tottus.cl/tottus-cl/lista/CATG27055/Despensa?sortBy=derived.currentPrice%2Casc
+https://www.santaisabel.cl/robots.txt
+https://www.santaisabel.cl/despensa?page=2
+https://www.santaisabel.cl/salsa-de-tomate-it-2077189/p
