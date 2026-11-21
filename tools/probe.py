@@ -15,6 +15,8 @@ import sys
 import time
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import httpx
 
 UA = (
@@ -85,7 +87,7 @@ def main() -> int:
                     # Cadena incompleta del servidor: completar vía AIA y reintentar (verificando).
                     try:
                         from urllib.parse import urlparse
-                        import aia  # noqa: PLC0415
+                        from radar import tls as aia  # noqa: PLC0415
                         host = urlparse(url).hostname
                         ctx = aia.ssl_context_for(host)
                         with httpx.Client(verify=ctx, http2=True, follow_redirects=True,

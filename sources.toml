@@ -1,0 +1,270 @@
+# Fuentes editables sin tocar código.
+# fast = trampa ⚡ (página 1, menor a mayor precio, cada ciclo rápido de ~2 min)
+# fast_every/fast_offset = la trampa corre 1 de cada N ciclos (rotación para no saturar)
+# runners = dónde corre: "cloud" (GitHub Actions), "chile" (nodo opcional), "local"
+
+[store_defaults.santaisabel]
+runners = ["cloud", "chile", "local"]
+max_pages = 60
+
+[store_defaults.acuenta]
+runners = ["cloud", "chile", "local"]
+max_pages = 40
+
+[store_defaults.unimarc]
+# Akamai bloquea las IPs de GitHub (403): solo nodo en Chile
+runners = ["chile", "local"]
+max_pages = 60
+
+# ───────────────────────── Santa Isabel ─────────────────────────
+[[source]]
+name = "sisa-botilleria"
+store = "santaisabel"
+category = "licores"
+url = "https://www.santaisabel.cl/botilleria?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "sisa-cuidado-personal-bebe"
+store = "santaisabel"
+category = "cuidado personal y bebé"
+url = "https://www.santaisabel.cl/cuidado-personal-y-bebe?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "sisa-limpieza"
+store = "santaisabel"
+category = "limpieza"
+url = "https://www.santaisabel.cl/limpieza?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "sisa-carnes"
+store = "santaisabel"
+category = "carnes"
+url = "https://www.santaisabel.cl/carnes-y-pescados?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "sisa-despensa"
+store = "santaisabel"
+category = "despensa"
+url = "https://www.santaisabel.cl/despensa?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "sisa-lacteos"
+store = "santaisabel"
+category = "lácteos"
+url = "https://www.santaisabel.cl/lacteos-huevos-y-congelados?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "sisa-quesos-fiambres"
+store = "santaisabel"
+category = "lácteos"
+url = "https://www.santaisabel.cl/quesos-y-fiambres?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 3
+
+[[source]]
+name = "sisa-frutas-verduras"
+store = "santaisabel"
+category = "frutas y verduras"
+url = "https://www.santaisabel.cl/frutas-y-verduras?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "sisa-snacks"
+store = "santaisabel"
+category = "despensa"
+url = "https://www.santaisabel.cl/chocolates-galletas-y-snacks?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 3
+fast_offset = 1
+
+[[source]]
+name = "sisa-mascotas"
+store = "santaisabel"
+category = "mascotas"
+url = "https://www.santaisabel.cl/mascotas?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "sisa-panaderia"
+store = "santaisabel"
+category = "despensa"
+url = "https://www.santaisabel.cl/panaderia-y-pasteleria?orderBy=OrderByPriceASC"
+
+# ───────────────────────── Acuenta ─────────────────────────
+[[source]]
+name = "acuenta-licores"
+store = "acuenta"
+category = "licores"
+url = "https://www.acuenta.cl/ca/la-boti/80?sort=2"
+fast = true
+
+[[source]]
+name = "acuenta-cuidado-personal"
+store = "acuenta"
+category = "cuidado personal"
+url = "https://www.acuenta.cl/ca/higiene-y-cuidado-personal/98?sort=2"
+fast = true
+
+[[source]]
+name = "acuenta-bebe"
+store = "acuenta"
+category = "bebés"
+url = "https://www.acuenta.cl/ca/mundo-bebe/09?sort=2"
+fast = true
+
+[[source]]
+name = "acuenta-limpieza"
+store = "acuenta"
+category = "limpieza"
+url = "https://www.acuenta.cl/ca/aseo-y-limpieza/11?sort=2"
+fast = true
+
+[[source]]
+name = "acuenta-carnes"
+store = "acuenta"
+category = "carnes"
+url = "https://www.acuenta.cl/ca/carnes-y-pescados/03?sort=2"
+fast = true
+
+[[source]]
+name = "acuenta-despensa"
+store = "acuenta"
+category = "despensa"
+url = "https://www.acuenta.cl/ca/despensa/05?sort=2"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "acuenta-lacteos"
+store = "acuenta"
+category = "lácteos"
+url = "https://www.acuenta.cl/ca/frescos-y-lacteos/07?sort=2"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "acuenta-bebidas"
+store = "acuenta"
+category = "bebidas"
+url = "https://www.acuenta.cl/ca/bebidas-aguas-y-jugos/02?sort=2"
+fast = true
+fast_every = 3
+
+[[source]]
+name = "acuenta-congelados"
+store = "acuenta"
+category = "congelados"
+url = "https://www.acuenta.cl/ca/congelados/04?sort=2"
+fast = true
+fast_every = 3
+fast_offset = 1
+
+[[source]]
+name = "acuenta-mascotas"
+store = "acuenta"
+category = "mascotas"
+url = "https://www.acuenta.cl/ca/mascotas/88?sort=2"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "acuenta-frutas-verduras"
+store = "acuenta"
+category = "frutas y verduras"
+url = "https://www.acuenta.cl/ca/frutas-y-verduras/06?sort=2"
+
+[[source]]
+name = "acuenta-desayuno-dulces"
+store = "acuenta"
+category = "despensa"
+url = "https://www.acuenta.cl/ca/desayuno-y-dulces/44?sort=2"
+
+[[source]]
+name = "acuenta-snacks"
+store = "acuenta"
+category = "despensa"
+url = "https://www.acuenta.cl/ca/papas-fritas-y-picoteo/51?sort=2"
+
+# ───────────────────────── Unimarc (solo nodo Chile) ─────────────────────────
+[[source]]
+name = "unimarc-licores"
+store = "unimarc"
+category = "licores"
+url = "https://www.unimarc.cl/category/bebidas-y-licores?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "unimarc-perfumeria"
+store = "unimarc"
+category = "cuidado personal"
+url = "https://www.unimarc.cl/category/perfumeria?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "unimarc-bebes"
+store = "unimarc"
+category = "bebés"
+url = "https://www.unimarc.cl/category/bebes-y-ninos?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "unimarc-limpieza"
+store = "unimarc"
+category = "limpieza"
+url = "https://www.unimarc.cl/category/limpieza?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "unimarc-carnes"
+store = "unimarc"
+category = "carnes"
+url = "https://www.unimarc.cl/category/carnes?orderBy=OrderByPriceASC"
+fast = true
+
+[[source]]
+name = "unimarc-despensa"
+store = "unimarc"
+category = "despensa"
+url = "https://www.unimarc.cl/category/despensa?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "unimarc-lacteos"
+store = "unimarc"
+category = "lácteos"
+url = "https://www.unimarc.cl/category/lacteos-huevos-y-refrigerados?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "unimarc-mascotas"
+store = "unimarc"
+category = "mascotas"
+url = "https://www.unimarc.cl/category/mascotas?orderBy=OrderByPriceASC"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "unimarc-frutas-verduras"
+store = "unimarc"
+category = "frutas y verduras"
+url = "https://www.unimarc.cl/category/frutas-y-verduras?orderBy=OrderByPriceASC"
+
+[[source]]
+name = "unimarc-congelados"
+store = "unimarc"
+category = "congelados"
+url = "https://www.unimarc.cl/category/congelados?orderBy=OrderByPriceASC"

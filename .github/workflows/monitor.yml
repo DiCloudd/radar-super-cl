@@ -1,0 +1,83 @@
+name: monitor
+
+# Ventanas de ~12 min encadenadas: cada ventana exitosa lanza la siguiente.
+# El cron es solo respaldo (en repos nuevos los cron a veces no se disparan).
+on:
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: "Duración de la ventana (min)"
+        default: "12"
+      chain:
+        description: "Encadenar la siguiente ventana"
+        default: "true"
+  schedule:
+    - cron: "17,47 * * * *"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: monitor
+  cancel-in-progress: false
+
+jobs:
+  window:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      MONITOR_RUNNER: cloud
+      RADAR_DB: ${{ github.workspace }}/data/radar.db
+      DB_KEY: ${{ secrets.DB_KEY }}
+      WINDOW_MIN: ${{ inputs.minutes || '12' }}
+      CHAIN: ${{ inputs.chain || 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Restaurar BD cifrada desde gh-pages
+        run: |
+          mkdir -p data
+          if git fetch --depth 1 origin gh-pages 2>/dev/null && git show origin/gh-pages:db/radar.db.enc > data/radar.db.enc 2>/dev/null; then
+            python -m radar.main decrypt data/radar.db.enc data/radar.db
+          else
+            echo "Sin BD previa: se parte de cero"
+          fi
+
+      - name: Ventana de monitoreo
+        run: python -m radar.main window --minutes "$WINDOW_MIN"
+
+      - name: Publicar BD cifrada en gh-pages (siempre)
+        if: always()
+        run: |
+          set -e
+          test -f data/radar.db || { echo "no hay BD que publicar"; exit 0; }
+          python -m radar.main encrypt data/radar.db data/radar.db.enc
+          rm -rf /tmp/site && mkdir -p /tmp/site/db
+          if git show origin/gh-pages:robots.txt >/dev/null 2>&1; then
+            git archive origin/gh-pages | tar -x -C /tmp/site
+          fi
+          cp data/radar.db.enc /tmp/site/db/radar.db.enc
+          printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
+          touch /tmp/site/.nojekyll
+          cd /tmp/site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "datos $(date -u +%FT%TZ)"
+          git push -q --force "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gh-pages
+          ls -la /tmp/site/db
+
+      - name: Encadenar siguiente ventana
+        if: success() && env.CHAIN == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run monitor.yml -R "${{ github.repository }}" -f minutes="$WINDOW_MIN" -f chain=true

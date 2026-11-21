@@ -1,0 +1,4 @@
+httpx[http2]==0.28.1
+cryptography==50.0.2
+certifi
+pytest==9.2.0
