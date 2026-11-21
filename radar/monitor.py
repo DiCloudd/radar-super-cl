@@ -107,6 +107,8 @@ class Monitor:
             self.st.source_error(src.name, str(e))
             log.error("❌ %s p%d: %s", src.name, page, e)
             return None
+        if r.status_code == 404 and page > 1:
+            return []        # pasada la última página (Santa Isabel responde 404): fin de categoría
         if r.status_code == 404:
             self.st.source_error(src.name, "HTTP 404")
             log.error("❌ %s p%d: HTTP 404 (¿cambió la URL?)", src.name, page)
@@ -189,13 +191,22 @@ class Monitor:
             await self.fast_idle.wait()           # ceder el paso a las trampas
             if self.store_paused(store):
                 return
-            src = srcs[rr % len(srcs)]
+            ready = [s for s in srcs if not self.in_cooldown(s)]
+            if not ready:
+                await asyncio.sleep(min(30, max(0, deadline - time.monotonic() - 25)))
+                continue
+            src = ready[rr % len(ready)]
             rr += 1
             self.st.set_meta(f"rr:{store}", rr)
             await self.crawl_step(src)
             steps += 1
             if store == "santaisabel" and steps % 2 == 0:
                 await self.enrich_ean(store, 1)
+
+    def in_cooldown(self, src: Source) -> bool:
+        cur = self.st.get_meta(f"cursor:{src.name}")
+        nxt = cur and cur.get("page") == 1 and cur.get("not_before")
+        return bool(nxt and datetime.fromisoformat(nxt) > _utc())
 
     async def crawl_step(self, src: Source) -> None:
         cur = self.st.get_meta(f"cursor:{src.name}") or {"page": 1, "sweep_start": now_iso(), "sweeps": 0}
@@ -215,7 +226,8 @@ class Monitor:
         if end:
             log.info("🏁 %s: barrido completo en %d páginas", src.name, page)
             cur = {"page": 1, "sweep_start": now_iso(), "sweeps": cur.get("sweeps", 0) + 1,
-                   "last_sweep_pages": page}
+                   "last_sweep_pages": page,
+                   "not_before": (_utc() + timedelta(seconds=config.SWEEP_COOLDOWN_S)).isoformat()}
         else:
             cur["page"] = page + 1
         self.st.set_meta(f"cursor:{src.name}", cur)

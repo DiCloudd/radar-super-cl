@@ -27,7 +27,8 @@ BLOCK_BACKOFF_MAX_S = 12 * 3600
 
 # Ciclos
 FAST_CYCLE_S = 120           # trampas ⚡ cada ~2 min
-END_REPEAT_RATIO = 0.8       # fin de categoría si >=80% de productos ya vistos en el barrido
+SWEEP_COOLDOWN_S = 15 * 60   # pausa mínima entre barridos completos de una misma categoría
+END_REPEAT_RATIO = 0.8      # fin de categoría si >=80% de productos ya vistos en el barrido
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "

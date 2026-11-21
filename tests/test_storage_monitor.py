@@ -119,6 +119,25 @@ def test_change_detected_between_reads():
     assert ch and ch[0].prev["price"] == 999 and ch[0].product.price == 170
 
 
+class Fake404(FakeFetcher):
+    async def get(self, url, **kw):
+        self.calls.append(url)
+        return FakeResp("not found", 404) if "currentPage=2" in url else FakeResp(self.html)
+
+
+def test_404_after_last_page_ends_sweep_with_cooldown():
+    # Regresión: Santa Isabel responde 404 pasada la última página y el cursor quedaba pegado.
+    st = Storage(":memory:")
+    f = Fake404()
+    m = Monitor(st, [SRC], runner="test", fetcher=f)
+    asyncio.run(m.crawl_step(SRC))
+    asyncio.run(m.crawl_step(SRC))
+    cur = st.get_meta("cursor:acuenta-despensa")
+    assert cur["page"] == 1 and cur["sweeps"] == 1
+    assert m.in_cooldown(SRC), "tras un barrido completo la categoría espera antes de repetirse"
+    assert not st.db.execute("SELECT last_error FROM source_stats WHERE last_error IS NOT NULL").fetchall()
+
+
 @pytest.mark.parametrize("val", [config.MIN_SPACING_S])
 def test_spacing_is_courteous(val):
     assert val >= 4
