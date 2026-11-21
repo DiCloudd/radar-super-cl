@@ -19,6 +19,7 @@ def row(key, store, name, brand, ean=None, net=None, alt=None):
     (("Jabón Líquido Ballerina Yoghurt & Vainilla Coco 650 ml Ballerina", "Ballerina"),
      ("Jabón Líquido Ballerina Yogurt Vainilla y Coco Doypack 650 ml", "Ballerina")),
     (("Yerba Mate Argentina Supremo Serrana 500 g", "Serrana"), ("Yerba Mate Argentina Serrana 500 g Supremo", "Serrana")),
+    (("Bebida Botella sabor Original 591 ml Coca-Cola", "CocaCola"), ("Bebida Coca-Cola Original 591 ml", "Coca-Cola")),
 ])
 def test_same_product_real_pairs(a, b):
     assert name_key(a[0], a[1]) == name_key(b[0], b[1])
@@ -37,6 +38,11 @@ def test_same_product_real_pairs(a, b):
      ("Leche Cultivada Soprole Proteína Chirimoya 1 L", "Soprole")),
     (("Cepillo de dientes twister Suave 2 Un Colgate", "Colgate"),
      ("Pack 2 un. Cepillo de Dientes Colgate Twister Medio", "Colgate")),
+    (("Flan Soprole Zerolacto Vainilla 110 g", "Soprole"), ("Flan Sabor Vainilla Pote 110 g", "Soprole")),
+    (("Cloro Gel Tradicional Doypack 650 ml Clorinda", "Clorinda"), ("Cloro Gel Clorinda Lavanda 650 ml", "Clorinda")),
+    (("Vino Cabernet Sauvignon Botella 750 mL", "Misiones De Rengo"),
+     ("Vino Misiones de Rengo Cuvée Cabernet Sauvignon 750 cc", "Misiones de Rengo")),
+    (("Cerveza Lata Ale 470 ml", "Odissea"), ("Cerveza Odissea Pink Ale Lata 470 cc", "Odissea")),
     # variantes que nunca deben mezclarse
     (("Bebida Coca-Cola Original 591 ml", "Coca-Cola"), ("Bebida Coca-Cola Light 591 ml", "Coca-Cola")),
     (("Bebida Coca-Cola Sin Azúcar 591 ml", "Coca-Cola"), ("Bebida Coca-Cola Original 591 ml", "Coca-Cola")),
@@ -74,6 +80,35 @@ def test_group_products_ean_and_name():
     assert g["a:1"] == g["l:1"] and method[g["a:1"]] == "ean"
     assert g["s:1"] == g["u:1"] and method[g["s:1"]] == "nombre"
     assert "s:2" not in g
+
+
+def test_product_without_ean_joins_ean_group_by_name():
+    rows = [
+        row("a:1", "acuenta", "Bebida Botella Sin Azúcar 591 ml Coca-Cola", "Coca-Cola", ean="7801610001196"),
+        row("l:1", "lider", "Bebida Coca-Cola Sin Azúcar Botella Desechable 591 ml", "Coca-Cola", ean="7801610001196"),
+        row("s:1", "santaisabel", "Bebida Coca-Cola Sin Azúcar 591 ml", "Coca-Cola"),
+        row("s:2", "santaisabel", "Bebida Coca-Cola Original 591 ml", "Coca-Cola"),
+    ]
+    g, method = group_products(rows)
+    assert g["s:1"] == g["a:1"] == g["l:1"]
+    assert "s:2" not in g
+
+
+def test_different_eans_never_joined_by_name():
+    rows = [row("a:1", "acuenta", "Jalea Soprole Guinda 110 g", "Soprole", ean="7801111111111"),
+            row("u:1", "unimarc", "Jalea Soprole guinda 110 g", "Soprole", ean="7802222222222")]
+    g, _ = group_products(rows)
+    assert not g
+
+
+def test_no_chaining_through_a_middle_product():
+    # A≈B y B≈C pero A≉C: no deben quedar los tres juntos
+    rows = [row("l:1", "lider", "Flan Sabor Vainilla Pote 110 g", "Soprole"),
+            row("s:1", "santaisabel", "Flan Soprole Vainilla 110 g", "Soprole"),
+            row("j:1", "jumbo", "Flan Soprole Zerolacto Vainilla 110 g", "Soprole")]
+    g, _ = group_products(rows)
+    assert g.get("l:1") == g.get("s:1")
+    assert g.get("j:1") != g.get("l:1")
 
 
 def test_never_two_products_of_same_store():

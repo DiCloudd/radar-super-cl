@@ -37,12 +37,23 @@ def _unit(r) -> tuple[float | None, str | None]:
     return up if up else (None, None)
 
 
+def small_img(url: str | None) -> str:
+    """Miniatura de ~200 px (las de Lider llegan a 2000 px: pesadas para datos móviles)."""
+    if not url:
+        return ""
+    if "walmartimages.cl/" in url and "odnWidth" not in url:
+        return url + ("&" if "?" in url else "?") + "odnHeight=200&odnWidth=200&odnBg=FFFFFF"
+    if "images.lider.cl/wmtcl" in url and "scale=" not in url:
+        return url.replace("&sink", "&scale=size[200x200]&sink")
+    return url
+
+
 def _compact(r, gid: str | None) -> dict:
     up, un = _unit(r)
     d = {
         "k": r["key"], "s": r["store"], "n": r["name"], "b": r["brand"] or "", "e": r["ean"] or "",
         "p": r["price"], "l": r["list_price"], "c": r["card_price"], "u": round(up) if up else None, "un": un,
-        "st": int(r["in_stock"] or 0), "img": r["image"] or "", "url": r["url"], "cat": r["category"] or "",
+        "st": int(r["in_stock"] or 0), "img": small_img(r["image"]), "url": r["url"], "cat": r["category"] or "",
         "f": r["first_seen"][:10], "mk": int(r["marketplace"] or 0), "g": gid,
     }
     if r["promos"]:

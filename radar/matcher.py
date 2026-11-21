@@ -26,6 +26,7 @@ botella botellas desechable retornable lata latas bolsa bolsas caja cajas doypac
 sachet sobre bandeja envase pote vidrio pet tetra tetrapak display formato familiar
 original clasico clasica tradicional nuevo nueva oferta promo cl chile mas
 congelado congelada congelados congeladas cong envasado envasada liquido liquida sabor pouch granulado
+porcion porciones aprox
 g gr grs gramos kg kgs kilo kilos ml cc lt lts l litro litros cm3 mg
 """.split())
 
@@ -38,7 +39,10 @@ cereza mora maracuya platano coco menta tropical berries citrus ciruela kiwi san
 original picante natural ahumado ajo merken pimienta queso tomate pollo carne vacuno cerdo pavo atun
 rn p m g xg xxg xxxg talla etapa recien nacido rizos liso grasa seco sensible anticaspa hombre mujer
 nino nina bebe kids adulto senior cachorro gato perro pequeno pequena mediano mediana grande raza
-reserva gran premium syrah merlot carmenere cabernet sauvignon chardonnay malbec
+reserva gran premium syrah merlot carmenere cabernet sauvignon chardonnay malbec cuvee especial seleccion
+selection estate barrica icono limited edicion
+zerolacto lavanda eucaliptus eucalipto floral citrico citrus bosque aloe vera talco primavera marina
+fresh pino canela flores manzanilla avena karite rosas jazmin sandalo
 gas mineral saborizada
 """.split())
 # sin "gas" con y sin gas distintos: "con gas" vs "sin gas" se detecta por el par
@@ -65,7 +69,9 @@ def tokens(name: str, brand: str | None) -> set[str]:
     n = re.sub(r"\b\d+(?:\s\d+)?\s*(?:g|gr|grs|kg|kgs|mg|ml|cc|l|lt|lts|un|und|unid|u|x|cm3|m|mts|metros|hojas)\b",
                " ", n)
     bt = set(norm(brand).split())
-    return {t for t in n.split() if t not in STOP and t not in bt and len(t) > 1 or t in VARIANT}
+    bk = brand_key(brand)   # "CocaCola" / "Coca-Cola" -> "cocacola": quita "coca" y "cola" del nombre
+    return {t for t in n.split()
+            if (t not in STOP and t not in bt and not (len(t) >= 3 and t in bk) and len(t) > 1) or t in VARIANT}
 
 
 def variant_sig(name: str) -> frozenset[str]:
@@ -115,6 +121,8 @@ def same_product(n1: str, b1: str | None, n2: str, b2: str | None) -> bool:
     # "Salud Completa" son productos distintos aunque compartan marca y tamaño)
     if not (similarity(a, b) >= 0.6 and len(a - b) <= 1 and len(b - a) <= 1):
         return False
+    if (a - b or b - a) and min(len(a), len(b)) < 3:
+        return False  # nombre demasiado genérico ("Cerveza Lata Ale"): solo vale coincidencia exacta
     if a - b and b - a:
         # sustitución de una palabra: solo vale si es la MISMA palabra escrita distinto
         # (yoghurt/yogurt, xtra/extra). "Next" vs "Proteína" o "Suave" vs "Medio" = otro producto.
@@ -168,12 +176,31 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
     # --- por nombre: solo para productos que el EAN no cruzó ---
     buckets: dict[NameKey, list[dict]] = defaultdict(list)
     for r in rows:
-        if r["key"] in ean_matched or r.get("marketplace"):
+        # los ya cruzados por EAN también entran: sirven de "ancla" para que un producto sin
+        # EAN de otra cadena se una a su grupo (pares ancla-ancla se saltan más abajo)
+        if r.get("marketplace"):
             continue
         k = name_key(r["name"], r.get("brand"), r.get("net_content"))
         if k:
             buckets[k].append(r)
     name_union: set[str] = set()
+    root_rows: dict[str, list[dict]] = defaultdict(list)
+    for r in rows:
+        root_rows[uf.find(r["key"])].append(r)
+
+    def compatible(ga: list[dict], gb: list[dict]) -> bool:
+        """Sin encadenamientos: TODO par entre ambos grupos debe ser el mismo producto
+        (salvo pares que el EAN ya confirmó)."""
+        for x in ga:
+            for y in gb:
+                if x["key"] in ean_matched and y["key"] in ean_matched:
+                    continue
+                kx, ky = name_key(x["name"], x.get("brand"), x.get("net_content")), \
+                    name_key(y["name"], y.get("brand"), y.get("net_content"))
+                if kx is None or kx != ky or not same_product(x["name"], x.get("brand"), y["name"], y.get("brand")):
+                    return False
+        return True
+
     for lst in buckets.values():
         if len({r["store"] for r in lst}) < 2:
             continue
@@ -182,6 +209,12 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
             for b in lst[i + 1:]:
                 if b["store"] == a["store"]:
                     continue
+                if a["key"] in ean_matched and b["key"] in ean_matched:
+                    continue  # el EAN ya decidió (mismo grupo o productos distintos)
+                if a.get("ean") and b.get("ean") and a["ean"] != b["ean"] and \
+                        not ({a["ean"]} & set((b.get("alt_eans") or "").split(","))) and \
+                        not ({b["ean"]} & set((a.get("alt_eans") or "").split(","))):
+                    continue  # ambos tienen EAN y son distintos: son productos distintos
                 if same_product(a["name"], a.get("brand"), b["name"], b.get("brand")):
                     s = similarity(tokens(a["name"], a.get("brand")), tokens(b["name"], b.get("brand")))
                     if s > best.get(b["store"], (0, None))[0]:
@@ -190,8 +223,12 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
                 ra, rb = uf.find(a["key"]), uf.find(b["key"])
                 if ra == rb or root_stores[ra] & root_stores[rb]:
                     continue  # uniría dos productos de la misma cadena: se descarta
+                if not compatible(root_rows[ra], root_rows[rb]):
+                    continue
                 uf.union(a["key"], b["key"])
-                root_stores[uf.find(a["key"])] = root_stores[ra] | root_stores[rb]
+                nr = uf.find(a["key"])
+                root_stores[nr] = root_stores[ra] | root_stores[rb]
+                root_rows[nr] = root_rows[ra] + root_rows[rb]
                 name_union |= {a["key"], b["key"]}
 
     groups: dict[str, set[str]] = defaultdict(set)
