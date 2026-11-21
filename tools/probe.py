@@ -81,6 +81,22 @@ def main() -> int:
                 (out / (safe_name(url) + ".txt")).write_text(text, encoding="utf-8")
             except Exception as e:  # noqa: BLE001
                 res = {"url": url, "error": f"{type(e).__name__}: {e}"[:200]}
+                if "CERTIFICATE_VERIFY_FAILED" in str(e):
+                    # Cadena incompleta del servidor: completar vía AIA y reintentar (verificando).
+                    try:
+                        from urllib.parse import urlparse
+                        import aia  # noqa: PLC0415
+                        host = urlparse(url).hostname
+                        ctx = aia.ssl_context_for(host)
+                        with httpx.Client(verify=ctx, http2=True, follow_redirects=True,
+                                          timeout=25, headers=BASE_HEADERS) as c2:
+                            r = c2.get(url, headers=headers)
+                        res = {"url": url, "status": r.status_code, "final": str(r.url),
+                               "bytes": len(r.content), "tls": "aia-completed"}
+                        res.update(analyze(r.text))
+                        (out / (safe_name(url) + ".txt")).write_text(r.text, encoding="utf-8")
+                    except Exception as e2:  # noqa: BLE001
+                        res["aia_error"] = f"{type(e2).__name__}: {e2}"[:200]
             results.append(res)
             print(json.dumps(res, ensure_ascii=False))
             time.sleep(4)
