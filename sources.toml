@@ -11,6 +11,10 @@ max_pages = 60
 runners = ["cloud", "chile", "local"]
 max_pages = 40
 
+[store_defaults.lider]
+runners = ["cloud", "chile", "local"]
+max_pages = 25
+
 [store_defaults.unimarc]
 # Akamai bloquea las IPs de GitHub (403): solo nodo en Chile
 runners = ["chile", "local"]
@@ -268,3 +272,173 @@ name = "unimarc-congelados"
 store = "unimarc"
 category = "congelados"
 url = "https://www.unimarc.cl/category/congelados?orderBy=OrderByPriceASC"
+
+# ───────────────────────── Lider (nube, best-effort) ─────────────────────────
+# Solo rutas /browse/. PerimeterX aparece a veces: se pausa con backoff, sin evasión.
+
+[[source]]
+name = "lider-licores"
+store = "lider"
+category = "licores"
+url = "https://www.lider.cl/browse/bebidas-y-licores/licores-y-destilados/3294424_18800914?sort=price_low"
+fast = true
+
+[[source]]
+name = "lider-vinos"
+store = "lider"
+category = "licores"
+url = "https://www.lider.cl/browse/bebidas-y-licores/vinos-y-espumantes/3294424_5719450?sort=price_low"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "lider-cervezas"
+store = "lider"
+category = "licores"
+url = "https://www.lider.cl/browse/bebidas-y-licores/cerveza/3294424_25254512?sort=price_low"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "lider-bebidas"
+store = "lider"
+category = "bebidas"
+url = "https://www.lider.cl/browse/bebidas-y-licores/bebidas-gaseosas/3294424_56657077?sort=price_low"
+fast = true
+fast_every = 3
+
+[[source]]
+name = "lider-aguas-jugos"
+store = "lider"
+category = "bebidas"
+url = "https://www.lider.cl/browse/bebidas-y-licores/aguas-y-jugos/3294424_6816081?sort=price_low"
+
+[[source]]
+name = "lider-bebe"
+store = "lider"
+category = "bebés"
+url = "https://www.lider.cl/browse/mundo-bebe/40094495?sort=price_low"
+fast = true
+
+[[source]]
+name = "lider-mascotas"
+store = "lider"
+category = "mascotas"
+url = "https://www.lider.cl/browse/mascotas/92129034?sort=price_low"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "lider-detergentes"
+store = "lider"
+category = "limpieza"
+url = "https://www.lider.cl/browse/limpieza-y-aseo/detergentes-y-cuidado-textil/43390617_6687378?sort=price_low"
+fast = true
+
+[[source]]
+name = "lider-limpieza-hogar"
+store = "lider"
+category = "limpieza"
+url = "https://www.lider.cl/browse/limpieza-y-aseo/limpieza-hogar/43390617_2268007?sort=price_low"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "lider-papeles"
+store = "lider"
+category = "limpieza"
+url = "https://www.lider.cl/browse/limpieza-y-aseo/papeles-hogar/43390617_72719306?sort=price_low"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "lider-cabello"
+store = "lider"
+category = "cuidado personal"
+url = "https://www.lider.cl/browse/belleza/rutina-para-el-cabello/70159643_23785819?sort=price_low"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "lider-corporal"
+store = "lider"
+category = "cuidado personal"
+url = "https://www.lider.cl/browse/belleza/rutina-corporal/70159643_38045396?sort=price_low"
+
+[[source]]
+name = "lider-afeitado"
+store = "lider"
+category = "cuidado personal"
+url = "https://www.lider.cl/browse/belleza/afeitado-y-depilaci-n/70159643_75593741?sort=price_low"
+
+[[source]]
+name = "lider-vacuno"
+store = "lider"
+category = "carnes"
+url = "https://www.lider.cl/browse/carnes-y-congelados/vacuno/8652133_29265944?sort=price_low"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "lider-pollo"
+store = "lider"
+category = "carnes"
+url = "https://www.lider.cl/browse/carnes-y-congelados/pollo/8652133_36612818?sort=price_low"
+
+[[source]]
+name = "lider-cerdo"
+store = "lider"
+category = "carnes"
+url = "https://www.lider.cl/browse/carnes-y-congelados/cerdos/8652133_97025819?sort=price_low"
+
+[[source]]
+name = "lider-congelados"
+store = "lider"
+category = "congelados"
+url = "https://www.lider.cl/browse/carnes-y-congelados/congelados-y-refrigerados/8652133_13010356?sort=price_low"
+
+[[source]]
+name = "lider-lacteos"
+store = "lider"
+category = "lácteos"
+url = "https://www.lider.cl/browse/frescos-lacteos-y-fiambreria/45669105?sort=price_low"
+fast = true
+fast_every = 3
+fast_offset = 1
+
+[[source]]
+name = "lider-abarrotes"
+store = "lider"
+category = "despensa"
+url = "https://www.lider.cl/browse/despensa-y-panader-a/abarrotes/1473433_8214833?sort=price_low"
+fast = true
+fast_every = 3
+fast_offset = 2
+
+[[source]]
+name = "lider-cafe"
+store = "lider"
+category = "despensa"
+url = "https://www.lider.cl/browse/despensa-y-panader-a/caf-t-y-hierbas/1473433_11894805?sort=price_low"
+
+[[source]]
+name = "lider-galletas"
+store = "lider"
+category = "despensa"
+url = "https://www.lider.cl/browse/despensa-y-panader-a/galletas-dulces-y-chocolates/1473433_5179992?sort=price_low"
+
+[[source]]
+name = "lider-snacks"
+store = "lider"
+category = "despensa"
+url = "https://www.lider.cl/browse/despensa-y-panader-a/snacks-y-picoteo/1473433_66742898?sort=price_low"
+
+[[source]]
+name = "lider-cereales"
+store = "lider"
+category = "despensa"
+url = "https://www.lider.cl/browse/despensa-y-panader-a/avenas-y-cereales/1473433_70936805?sort=price_low"

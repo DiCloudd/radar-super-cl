@@ -104,6 +104,41 @@ def test_acuenta_page_url():
     assert SCRAPERS["acuenta"].page_url(s, 2) == "https://www.acuenta.cl/ca/despensa/05?sort=2&currentPage=2"
 
 
+# ---------------- Lider ----------------
+from radar.scrapers.lider import ean_from_item_id, valid_ean  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def lider():
+    s = src("lider", "https://www.lider.cl/browse/bebidas-y-licores/bebidas-gaseosas/3294424_56657077?sort=price_low")
+    return SCRAPERS["lider"].parse_listing(load("lider_list.html.gz"), s)
+
+
+def test_lider_40_products_sorted(lider):
+    assert len(lider.products) == 40
+    prices = [p.price for p in lider.products]
+    # la página trae un bloque destacado + el listado principal ordenado de menor a mayor
+    run = best = 1
+    for a, b in zip(prices, prices[1:]):
+        run = run + 1 if b >= a else 1
+        best = max(best, run)
+    assert best >= 20
+    assert lider.total and lider.total >= 200
+
+
+def test_lider_ean_from_item_id():
+    assert ean_from_item_id("00780161059199") == "7801610591994"
+    assert valid_ean("7801610591994")
+    assert ean_from_item_id("ABC") is None
+
+
+def test_lider_fields(lider):
+    p = lider.products[0]
+    assert p.ean and valid_ean(p.ean)
+    assert p.url.startswith("https://www.lider.cl/ip/") and "?" not in p.url
+    assert all(not x.marketplace for x in lider.products[:5])
+
+
 # ---------------- Unimarc ----------------
 @pytest.fixture(scope="module")
 def unimarc():

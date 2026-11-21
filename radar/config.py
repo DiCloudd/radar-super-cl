@@ -17,6 +17,7 @@ MONITOR_RUNNER = os.environ.get("MONITOR_RUNNER", "local")
 # Cortesía por dominio
 MIN_SPACING_S = 4.0          # espacio mínimo entre peticiones al mismo dominio
 JITTER_S = 1.5               # jitter aleatorio extra
+DOMAIN_SPACING_S = {"www.lider.cl": 8.0}   # dominios sensibles: más espacio entre peticiones
 BUDGET_WARN_PER_MIN = 15     # avisar si un dominio supera esto
 REQUEST_TIMEOUT_S = 30
 MAX_RETRIES = 2

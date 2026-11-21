@@ -51,6 +51,14 @@ jobs:
             echo "Sin BD previa: se parte de cero"
           fi
 
+      - name: Integrar datos del nodo Chile (si existe)
+        run: |
+          if git fetch --depth 1 origin node-data 2>/dev/null && git show origin/node-data:node.json.gz > /tmp/node.json.gz 2>/dev/null; then
+            python -m radar.main ingest /tmp/node.json.gz
+          else
+            echo "Sin nodo Chile por ahora"
+          fi
+
       - name: Ventana de monitoreo
         run: python -m radar.main window --minutes "$WINDOW_MIN"
 

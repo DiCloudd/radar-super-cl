@@ -67,6 +67,11 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("stats")
     pb = sub.add_parser("publish")
     pb.add_argument("out", type=Path)
+    ne = sub.add_parser("node-export")
+    ne.add_argument("out", type=Path)
+    ne.add_argument("--stores", default="unimarc")
+    ig = sub.add_parser("ingest")
+    ig.add_argument("file", type=Path)
     for c in ("encrypt", "decrypt"):
         e = sub.add_parser(c)
         e.add_argument("src", type=Path)
@@ -107,6 +112,16 @@ def main(argv: list[str] | None = None) -> int:
         from .publisher import export
         st = Storage(config.DB_PATH)
         print("exportado:", export(st, a.out))
+        st.close()
+        return 0
+    if a.cmd in ("node-export", "ingest"):
+        from . import nodesync
+        st = Storage(config.DB_PATH)
+        if a.cmd == "node-export":
+            print("exportados:", nodesync.export_node(st, a.stores.split(","), a.out))
+        else:
+            n, ch = nodesync.ingest(st, a.file)
+            print(f"integrados del nodo: {n} productos, {ch} cambios de precio")
         st.close()
         return 0
     if a.cmd == "encrypt":

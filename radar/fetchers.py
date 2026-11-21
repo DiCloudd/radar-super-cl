@@ -97,7 +97,8 @@ class Fetcher:
 
     async def _wait_turn(self, host: str) -> None:
         last = self._last.get(host, 0.0)
-        wait = last + self.min_spacing + random.uniform(0, self.jitter) - time.monotonic()
+        spacing = max(self.min_spacing, config.DOMAIN_SPACING_S.get(host, 0.0)) if self.min_spacing else 0.0
+        wait = last + spacing + random.uniform(0, self.jitter) - time.monotonic()
         if wait > 0:
             await asyncio.sleep(wait)
         self._last[host] = time.monotonic()

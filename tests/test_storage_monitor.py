@@ -47,7 +47,7 @@ def test_sources_toml_valid():
     srcs = load_sources()
     names = [s.name for s in srcs]
     assert len(names) == len(set(names))
-    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc"}
+    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc", "lider"}
     cloud = load_sources(runner="cloud")
     assert not [s for s in cloud if s.store == "unimarc"], "Unimarc no debe correr en la nube"
 
@@ -136,6 +136,23 @@ def test_404_after_last_page_ends_sweep_with_cooldown():
     assert cur["page"] == 1 and cur["sweeps"] == 1
     assert m.in_cooldown(SRC), "tras un barrido completo la categoría espera antes de repetirse"
     assert not st.db.execute("SELECT last_error FROM source_stats WHERE last_error IS NOT NULL").fetchall()
+
+
+def test_node_export_ingest_roundtrip(tmp_path):
+    from radar.nodesync import export_node, ingest
+    node = Storage(":memory:")
+    node.upsert(Product(store="unimarc", sku="7861", name="Ajo", price=360, url="u", ean="7802410053514",
+                        found_at="2026-11-21T10:00:00+00:00"))
+    f = tmp_path / "unimarc.json.gz"
+    assert export_node(node, ["unimarc"], f) == 1
+    cloud = Storage(":memory:")
+    assert ingest(cloud, f) == (1, 0)
+    assert ingest(cloud, f) == (0, 0)          # idempotente
+    node.upsert(Product(store="unimarc", sku="7861", name="Ajo", price=250, url="u",
+                        found_at="2026-11-21T11:00:00+00:00"))
+    export_node(node, ["unimarc"], f)
+    assert ingest(cloud, f) == (1, 1)          # cambio de precio -> historial
+    assert [r["price"] for r in cloud.history("unimarc:7861")] == [360, 250]
 
 
 @pytest.mark.parametrize("val", [config.MIN_SPACING_S])

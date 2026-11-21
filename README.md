@@ -7,11 +7,14 @@ GitHub Actions (ventanas de ~12 min encadenadas) y guarda la BD cifrada en la ra
 
 | Cadena | Fuente | Nube (Actions) | Nodo Chile |
 |---|---|---|---|
+| Lider | `__NEXT_DATA__` de /browse/ (EAN desde usItemId) | ✅ best-effort (pausa si aparece PerimeterX) | ✅ |
 | Santa Isabel | payload RSC de categoría + EAN desde la ficha | ✅ | ✅ |
 | Acuenta | payload RSC (Instaleap), trae EAN | ✅ | ✅ |
-| Unimarc | `__NEXT_DATA__`, trae EAN | ⏸️ Akamai 403 a IPs de GitHub | ✅ |
-| Tottus | — | ❌ Cloudflare bloquea todo cliente HTTP | ❌ |
-| Lider | — | ❌ descartada (PerimeterX + robots.txt) | ❌ |
+| Unimarc | `__NEXT_DATA__`, trae EAN | ⏸️ Akamai 403 a IPs de GitHub | ✅ `tools/node_chile.sh` |
+| Tottus | — | ❌ Cloudflare bloquea todo navegador automatizado | ❌ (requeriría evasión) |
+
+Comparación entre cadenas: EAN primero; si no hay, marca + contenido exacto + nombre casi idéntico
+(`radar/matcher.py`). Errores de precio con reglas estrictas en `radar/analysis.py`.
 
 Las fuentes se editan en `sources.toml` (sin tocar código).
 
@@ -32,10 +35,11 @@ Android con Termux puede correr el mismo monitor solo para Unimarc:
 ```bash
 git clone https://github.com/DiCloudd/radar-super-cl && cd radar-super-cl
 python -m venv .venv && . .venv/bin/activate && pip install -r requirements.txt
-MONITOR_RUNNER=chile RADAR_DB=data/chile.db python -m radar.main window --minutes 12 --only unimarc
+bash tools/node_chile.sh
 ```
 
-(La sincronización de su BD con la nube se agrega en una fase posterior.)
+El script `tools/node_chile.sh` hace todo en bucle: ventana de 12 min, exporta y sube a la rama
+`node-data`; cada ventana de la nube lo integra automáticamente.
 
 ## Ética
 
