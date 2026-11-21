@@ -291,6 +291,8 @@ store = "lider"
 category = "licores"
 url = "https://www.lider.cl/browse/bebidas-y-licores/licores-y-destilados/3294424_18800914?sort=price_low"
 fast = true
+fast_every = 3
+fast_offset = 0
 
 [[source]]
 name = "lider-vinos"
@@ -298,7 +300,8 @@ store = "lider"
 category = "licores"
 url = "https://www.lider.cl/browse/bebidas-y-licores/vinos-y-espumantes/3294424_5719450?sort=price_low"
 fast = true
-fast_every = 2
+fast_every = 3
+fast_offset = 1
 
 [[source]]
 name = "lider-cervezas"
@@ -306,8 +309,8 @@ store = "lider"
 category = "licores"
 url = "https://www.lider.cl/browse/bebidas-y-licores/cerveza/3294424_25254512?sort=price_low"
 fast = true
-fast_every = 2
-fast_offset = 1
+fast_every = 3
+fast_offset = 0
 
 [[source]]
 name = "lider-bebidas"
@@ -316,6 +319,7 @@ category = "bebidas"
 url = "https://www.lider.cl/browse/bebidas-y-licores/bebidas-gaseosas/3294424_56657077?sort=price_low"
 fast = true
 fast_every = 3
+fast_offset = 1
 
 [[source]]
 name = "lider-aguas-jugos"
@@ -329,6 +333,8 @@ store = "lider"
 category = "bebés"
 url = "https://www.lider.cl/browse/mundo-bebe/40094495?sort=price_low"
 fast = true
+fast_every = 2
+fast_offset = 0
 
 [[source]]
 name = "lider-mascotas"
@@ -345,6 +351,8 @@ store = "lider"
 category = "limpieza"
 url = "https://www.lider.cl/browse/limpieza-y-aseo/detergentes-y-cuidado-textil/43390617_6687378?sort=price_low"
 fast = true
+fast_every = 2
+fast_offset = 0
 
 [[source]]
 name = "lider-limpieza-hogar"
@@ -353,6 +361,7 @@ category = "limpieza"
 url = "https://www.lider.cl/browse/limpieza-y-aseo/limpieza-hogar/43390617_2268007?sort=price_low"
 fast = true
 fast_every = 2
+fast_offset = 1
 
 [[source]]
 name = "lider-papeles"
@@ -361,7 +370,7 @@ category = "limpieza"
 url = "https://www.lider.cl/browse/limpieza-y-aseo/papeles-hogar/43390617_72719306?sort=price_low"
 fast = true
 fast_every = 2
-fast_offset = 1
+fast_offset = 0
 
 [[source]]
 name = "lider-cabello"
@@ -370,6 +379,7 @@ category = "cuidado personal"
 url = "https://www.lider.cl/browse/belleza/rutina-para-el-cabello/70159643_23785819?sort=price_low"
 fast = true
 fast_every = 2
+fast_offset = 1
 
 [[source]]
 name = "lider-corporal"
@@ -390,7 +400,7 @@ category = "carnes"
 url = "https://www.lider.cl/browse/carnes-y-congelados/vacuno/8652133_29265944?sort=price_low"
 fast = true
 fast_every = 2
-fast_offset = 1
+fast_offset = 0
 
 [[source]]
 name = "lider-pollo"
@@ -426,7 +436,7 @@ category = "despensa"
 url = "https://www.lider.cl/browse/despensa-y-panader-a/abarrotes/1473433_8214833?sort=price_low"
 fast = true
 fast_every = 3
-fast_offset = 2
+fast_offset = 0
 
 [[source]]
 name = "lider-cafe"

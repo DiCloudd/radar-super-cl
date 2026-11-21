@@ -16,6 +16,7 @@ import re
 import unicodedata
 from collections import defaultdict
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 
 from .units import is_small_format, parse_content
 
@@ -112,7 +113,14 @@ def same_product(n1: str, b1: str | None, n2: str, b2: str | None) -> bool:
     a, b = tokens(n1, b1), tokens(n2, b2)
     # como máximo UNA palabra significativa distinta por lado (ej. "Limpieza Profunda" vs
     # "Salud Completa" son productos distintos aunque compartan marca y tamaño)
-    return similarity(a, b) >= 0.6 and len(a - b) <= 1 and len(b - a) <= 1
+    if not (similarity(a, b) >= 0.6 and len(a - b) <= 1 and len(b - a) <= 1):
+        return False
+    if a - b and b - a:
+        # sustitución de una palabra: solo vale si es la MISMA palabra escrita distinto
+        # (yoghurt/yogurt, xtra/extra). "Next" vs "Proteína" o "Suave" vs "Medio" = otro producto.
+        x, y = next(iter(a - b)), next(iter(b - a))
+        return SequenceMatcher(None, x, y).ratio() >= 0.75
+    return True
 
 
 class _UF:

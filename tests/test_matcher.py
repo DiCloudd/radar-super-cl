@@ -16,6 +16,9 @@ def row(key, store, name, brand, ean=None, net=None, alt=None):
     (("Cebolla Picada 250 g Lider", "Lider"), ("Cebolla Picada Congelada 250 g", "LIDER")),
     (("Compota Watt's pera pouch 90 g", "Watts"), ("Compota Watt's Pera 90 g", "Watt's")),
     (("Jabón Barra Elite Humectante 90 g", "Elite"), ("Jabón Barra Humectante 90 g Elite", "Elite")),
+    (("Jabón Líquido Ballerina Yoghurt & Vainilla Coco 650 ml Ballerina", "Ballerina"),
+     ("Jabón Líquido Ballerina Yogurt Vainilla y Coco Doypack 650 ml", "Ballerina")),
+    (("Yerba Mate Argentina Supremo Serrana 500 g", "Serrana"), ("Yerba Mate Argentina Serrana 500 g Supremo", "Serrana")),
 ])
 def test_same_product_real_pairs(a, b):
     assert name_key(a[0], a[1]) == name_key(b[0], b[1])
@@ -30,6 +33,10 @@ def test_same_product_real_pairs(a, b):
      ("Vino Cabernet Sauvignon /Syrah Reserva 750 ml Misiones de Rengo", "Misiones De Rengo")),
     (("Alimento Húmedo Perro Adulto Sabor Pollo Pouch 100 g Pedigree", "Pedigree"),
      ("Alimento Húmedo Perro Adulto Pedigree Pequeño Pollo 100 g", "Pedigree")),
+    (("Leche Cultivada Next Sabor Chirimoya Botella 1 L Soprole", "Soprole"),
+     ("Leche Cultivada Soprole Proteína Chirimoya 1 L", "Soprole")),
+    (("Cepillo de dientes twister Suave 2 Un Colgate", "Colgate"),
+     ("Pack 2 un. Cepillo de Dientes Colgate Twister Medio", "Colgate")),
     # variantes que nunca deben mezclarse
     (("Bebida Coca-Cola Original 591 ml", "Coca-Cola"), ("Bebida Coca-Cola Light 591 ml", "Coca-Cola")),
     (("Bebida Coca-Cola Sin Azúcar 591 ml", "Coca-Cola"), ("Bebida Coca-Cola Original 591 ml", "Coca-Cola")),
