@@ -31,6 +31,10 @@ class Scraper(ABC):
     def referer(self, source: Source) -> str | None:
         return self.base_url + "/"
 
+    def extra_headers(self) -> dict:
+        """Headers adicionales (ej. llave de socio acordada con la tienda)."""
+        return {}
+
 
 def money(value) -> float | None:
     """'$1.290' | 1290 | '1.290' -> 1290.0 (pesos chilenos, sin decimales)."""

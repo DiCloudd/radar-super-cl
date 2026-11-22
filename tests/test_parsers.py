@@ -192,3 +192,26 @@ def test_acuenta_weighted_products_use_final_price():
     assert p.ean == "7804115002446"            # el EAN real primero, el interno (2...) después
     q = next(x for x in res.products if x.name == "Pollo Trutro Largo Congelado 800 g Seara")
     assert q.price == 3390 and not (q.net_content or "").startswith("≈")   # por unidad: sin cambios
+
+
+# ---------------- Tottus (socio) ----------------
+def test_tottus_parser_real_sample():
+    html = (FX / "tottus_list.html").read_text(encoding="utf-8")
+    s = src("tottus", "https://www.tottus.cl/tottus-cl/lista/CATG27074/Aseo-y-Limpieza?sortBy=derived.currentPrice%2Casc", "limpieza")
+    res = SCRAPERS["tottus"].parse_listing(html, s)
+    assert len(res.products) == 8 and res.total == 1158 and res.page_size == 48
+    p = next(x for x in res.products if x.sku == "112737586")
+    assert p.price == 402 and p.list_price == 670 and p.discount_pct == pytest.approx(40, abs=0.1)
+    assert p.unit == "un" and p.unit_price == 8 and p.net_content == "50 UN"
+    assert p.brand == "Elite" and not p.marketplace
+    assert p.url.startswith("https://www.tottus.cl/tottus-cl/articulo/")
+    q = next(x for x in res.products if x.sku == "117637238")
+    assert q.price == 410 and q.list_price is None
+
+
+def test_tottus_partner_header_only_with_token(monkeypatch):
+    sc = SCRAPERS["tottus"]
+    monkeypatch.delenv("TOTTUS_PARTNER_TOKEN", raising=False)
+    assert sc.extra_headers() == {}
+    monkeypatch.setenv("TOTTUS_PARTNER_TOKEN", "llave-de-prueba")
+    assert sc.extra_headers() == {"X-Radar-Partner": "llave-de-prueba"}

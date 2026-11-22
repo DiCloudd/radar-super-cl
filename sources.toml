@@ -24,6 +24,12 @@ max_pages = 80
 runners = ["chile", "local"]
 max_pages = 40
 
+[store_defaults.tottus]
+# Requiere autorización del socio: llave en el GitHub Secret TOTTUS_PARTNER_TOKEN
+# (sin ella estas fuentes no se activan). Ver docs/TOTTUS_INTEGRACION.md
+runners = ["cloud", "chile", "local"]
+max_pages = 40
+
 [store_defaults.unimarc]
 # Akamai bloquea las IPs de GitHub (403): solo nodo en Chile
 runners = ["chile", "local"]
@@ -652,3 +658,119 @@ name = "alvi-frutas-verduras"
 store = "alvi"
 category = "frutas y verduras"
 url = "https://www.alvi.cl/category/frutas-y-verduras?orderBy=OrderByPriceASC"
+
+# ───────────────────────── Tottus (socio: requiere TOTTUS_PARTNER_TOKEN) ─────────────────────────
+
+[[source]]
+name = "tottus-despensa"
+store = "tottus"
+category = "despensa"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27055/Despensa?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "tottus-carnes"
+store = "tottus"
+category = "carnes"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27069/Carnes?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "tottus-aseo"
+store = "tottus"
+category = "limpieza"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27074/Aseo-y-Limpieza?sortBy=derived.currentPrice%2Casc"
+fast = true
+
+[[source]]
+name = "tottus-detergentes"
+store = "tottus"
+category = "limpieza"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27133/Detergente-y-Cuidado-para-la-Ropa?sortBy=derived.currentPrice%2Casc"
+fast = true
+
+[[source]]
+name = "tottus-papeles"
+store = "tottus"
+category = "limpieza"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27445/Papeles-Higienicos?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "tottus-cuidado-personal"
+store = "tottus"
+category = "cuidado personal"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27084/Cuidado-Personal?sortBy=derived.currentPrice%2Casc"
+fast = true
+
+[[source]]
+name = "tottus-bebe"
+store = "tottus"
+category = "bebés"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG23788/Mundo-Bebe?sortBy=derived.currentPrice%2Casc"
+fast = true
+
+[[source]]
+name = "tottus-mascotas"
+store = "tottus"
+category = "mascotas"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG10180/Mascotas?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "tottus-vinos"
+store = "tottus"
+category = "licores"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG29203/Vinos?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "tottus-licores"
+store = "tottus"
+category = "licores"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG29204/Licores?sortBy=derived.currentPrice%2Casc"
+fast = true
+
+[[source]]
+name = "tottus-cervezas"
+store = "tottus"
+category = "licores"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27083/Cervezas?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "tottus-bebidas"
+store = "tottus"
+category = "bebidas"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27217/Bebidas?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 3
+
+[[source]]
+name = "tottus-lacteos"
+store = "tottus"
+category = "lácteos"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27139/Lacteos-y-Quesos?sortBy=derived.currentPrice%2Casc"
+fast = true
+fast_every = 2
+
+[[source]]
+name = "tottus-congelados"
+store = "tottus"
+category = "congelados"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27073/Congelados?sortBy=derived.currentPrice%2Casc"
+
+[[source]]
+name = "tottus-frutas-verduras"
+store = "tottus"
+category = "frutas y verduras"
+url = "https://www.tottus.cl/tottus-cl/lista/CATG27070/Frutas-y-Verduras?sortBy=derived.currentPrice%2Casc"

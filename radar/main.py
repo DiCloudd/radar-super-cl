@@ -41,7 +41,7 @@ async def _scan(name: str, page: int) -> int:
     sc = SCRAPERS[src.store]
     f = Fetcher()
     try:
-        r = await f.get(sc.page_url(src, page), referer=sc.referer(src), cookies=sc.cookies)
+        r = await f.get(sc.page_url(src, page), referer=sc.referer(src), cookies=sc.cookies, headers=sc.extra_headers())
     finally:
         await f.close()
     res = sc.parse_listing(r.text, src)

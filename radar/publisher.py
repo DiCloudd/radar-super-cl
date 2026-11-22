@@ -26,7 +26,7 @@ STORE_NAMES = {"lider": "Lider", "jumbo": "Jumbo", "santaisabel": "Santa Isabel"
 STORE_NOTES = {
     "unimarc": "Bloquea las IPs de GitHub (Akamai). Se integra con el nodo opcional en Chile.",
     "alvi": "Mayorista SMU. Bloquea las IPs de GitHub (Akamai). Se integra con el nodo opcional en Chile.",
-    "tottus": "Cloudflare bloquea a todo navegador automatizado; integrarla exigiría evadir protecciones.",
+    "tottus": "Integración lista; se activa cuando Tottus habilite la llave de socio en su Cloudflare.",
 }
 
 

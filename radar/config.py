@@ -54,6 +54,10 @@ class Source:
         return self.enabled and runner in self.runners
 
 
+# Tiendas que solo se activan con autorización del socio (llave en GitHub Secrets)
+REQUIRES_ENV = {"tottus": "TOTTUS_PARTNER_TOKEN"}
+
+
 def load_sources(path: Path = SOURCES_FILE, runner: str | None = None) -> list[Source]:
     data = tomllib.loads(path.read_text(encoding="utf-8"))
     defaults = data.get("store_defaults", {})
@@ -62,5 +66,6 @@ def load_sources(path: Path = SOURCES_FILE, runner: str | None = None) -> list[S
         merged = {**defaults.get(raw["store"], {}), **raw}
         out.append(Source(**merged))
     if runner:
-        out = [s for s in out if s.active_on(runner)]
+        out = [s for s in out if s.active_on(runner)
+               and (s.store not in REQUIRES_ENV or os.environ.get(REQUIRES_ENV[s.store], "").strip())]
     return out

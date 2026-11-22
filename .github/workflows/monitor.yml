@@ -30,6 +30,7 @@ jobs:
       MONITOR_RUNNER: cloud
       RADAR_DB: ${{ github.workspace }}/data/radar.db
       DB_KEY: ${{ secrets.DB_KEY }}
+      TOTTUS_PARTNER_TOKEN: ${{ secrets.TOTTUS_PARTNER_TOKEN }}
       WINDOW_MIN: ${{ inputs.minutes || '12' }}
       CHAIN: ${{ inputs.chain || 'true' }}
     steps:

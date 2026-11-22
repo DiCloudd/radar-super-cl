@@ -95,7 +95,8 @@ class Monitor:
         url = sc.page_url(src, page)
         t0 = time.monotonic()
         try:
-            r = await self.fetcher.get(url, referer=sc.referer(src), cookies=sc.cookies)
+            r = await self.fetcher.get(url, referer=sc.referer(src), cookies=sc.cookies,
+                                       headers=sc.extra_headers())
             self.stats.requests += 1
         except BlockedError as e:
             self.stats.requests += 1

@@ -15,7 +15,7 @@ GitHub Actions (ventanas de ~12 min encadenadas) y guarda la BD cifrada en la ra
 | Alvi (mayorista) | mismo extractor que Unimarc (SMU) + precios por cantidad | ⏸️ Akamai 403 | ✅ `tools/node_chile.sh` |
 | Super10 | solo catálogo de ofertas para socios (sin catálogo completo) | — | posible a futuro |
 | Cugat | — | ❌ Cloudflare | — |
-| Tottus | — | ❌ Cloudflare bloquea todo navegador automatizado | ❌ (requeriría evasión) |
+| Tottus | `__NEXT_DATA__` de /lista/ (48/pág) | 🔑 lista; se activa con la llave de socio (`TOTTUS_PARTNER_TOKEN`) | — |
 
 Comparación entre cadenas: EAN primero; si no hay, marca + contenido exacto + nombre casi idéntico
 (`radar/matcher.py`). Errores de precio con reglas estrictas en `radar/analysis.py`.
@@ -66,3 +66,9 @@ que nunca sale del teléfono. La lista de dispositivos se guarda cifrada en `acc
 
 La app instalada en la pantalla de inicio del iPhone tiene almacenamiento propio: cuenta como otro
 dispositivo y también hay que aprobarla.
+
+## Tottus (integración autorizada)
+
+El extractor está listo. Se activa cuando Tottus configura en su Cloudflare la regla descrita en
+[docs/TOTTUS_INTEGRACION.md](docs/TOTTUS_INTEGRACION.md) y la llave acordada se guarda como GitHub Secret
+`TOTTUS_PARTNER_TOKEN`. No se evade ninguna protección.

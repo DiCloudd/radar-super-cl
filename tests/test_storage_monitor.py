@@ -47,7 +47,7 @@ def test_sources_toml_valid():
     srcs = load_sources()
     names = [s.name for s in srcs]
     assert len(names) == len(set(names))
-    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc", "lider", "jumbo", "alvi"}
+    assert {s.store for s in srcs} == {"santaisabel", "acuenta", "unimarc", "lider", "jumbo", "alvi", "tottus"}
     cloud = load_sources(runner="cloud")
     assert not [s for s in cloud if s.store in ("unimarc", "alvi")], "SMU no debe correr en la nube"
 
@@ -166,3 +166,10 @@ def test_marketplace_prices_flagged_in_history():
     st.upsert(prod(price=1690))
     rows = [dict(r) for r in st.db.execute("SELECT price, marketplace FROM prices ORDER BY id")]
     assert rows == [{"price": 18990, "marketplace": 1}, {"price": 1690, "marketplace": 0}]
+
+
+def test_tottus_sources_need_partner_token(monkeypatch):
+    monkeypatch.delenv("TOTTUS_PARTNER_TOKEN", raising=False)
+    assert not [s for s in load_sources(runner="cloud") if s.store == "tottus"]
+    monkeypatch.setenv("TOTTUS_PARTNER_TOKEN", "x")
+    assert len([s for s in load_sources(runner="cloud") if s.store == "tottus"]) == 15

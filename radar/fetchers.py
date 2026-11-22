@@ -151,11 +151,11 @@ class Fetcher:
                 raise
 
     async def get(self, url: str, *, referer: str | None = None,
-                  cookies: dict | None = None) -> httpx.Response:
+                  cookies: dict | None = None, headers: dict | None = None) -> httpx.Response:
         host = urlparse(url).hostname or ""
         if not await self.allowed(url):
             raise RobotsDisallowed(f"robots.txt no permite {url}")
-        headers = {"Referer": referer} if referer else None
+        headers = {**({"Referer": referer} if referer else {}), **(headers or {})} or None
         last_exc: Exception | None = None
         for attempt in range(config.MAX_RETRIES + 1):
             try:
