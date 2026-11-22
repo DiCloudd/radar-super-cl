@@ -21,6 +21,8 @@ from .models import Product, now_iso
 from .scrapers import SCRAPERS
 from .scrapers.santaisabel import parse_ean_from_pdp
 from .storage import Storage
+from . import watch
+from .pdp import parse_pdp
 
 log = logging.getLogger("radar.monitor")
 
@@ -148,6 +150,9 @@ class Monitor:
         for p in products:
             changed, prev = self.st.upsert(p)
             self.stats.products += 1
+            if prev is not None and not prev["in_stock"] and p.in_stock:
+                if watch.on_reading(self.st, p.key, p.name, p.store, p.url, p.price, p.in_stock, p.image):
+                    log.info("🚨 volvió el stock: %s (%s) $%s", p.name, p.store, int(p.price))
             if prev is None:
                 self.stats.new += 1
             elif changed:
@@ -255,6 +260,53 @@ class Monitor:
                 self.stats.eans += 1
             self.st.commit()
 
+    # ---------- 🚨 vigilancia activa de reposición ----------
+    async def watch_loop(self, deadline: float, every: float = 240, per_store: int = 4) -> None:
+        stores = {s.store for s in self.sources} & watch.PDP_STORES
+        while time.monotonic() < deadline - 60 and stores:
+            items = sorted(((k, w) for k, w in (self.st.get_meta("watch", {}) or {}).items()
+                            if w.get("store") in stores), key=lambda kw: kw[1].get("checked", ""))
+            done: dict[str, int] = {}
+            for key, w in items:
+                st_ = w["store"]
+                if done.get(st_, 0) >= per_store or self.store_paused(st_) or time.monotonic() > deadline - 45:
+                    continue
+                done[st_] = done.get(st_, 0) + 1
+                await self.fast_idle.wait()
+                try:
+                    r = await self.fetchers.get(st_, self.fetcher).get(w["url"], referer=SCRAPERS[st_].base_url + "/")
+                    self.stats.requests += 1
+                except BlockedError as e:
+                    self.mark_blocked(st_, e.reason)
+                    continue
+                except (FetchError, RobotsDisallowed) as e:
+                    log.info("vigilancia %s: %s", w.get("name", key)[:40], e)
+                    continue
+                info = parse_pdp(st_, r.text) if r.status_code == 200 else None
+                cur = self.st.get_meta("watch", {}) or {}
+                if key in cur:
+                    cur[key]["checked"] = now_iso()
+                    self.st.set_meta("watch", cur)
+                if info and info.in_stock and info.price:
+                    if watch.on_reading(self.st, key, w["name"], st_, w["url"], info.price, True):
+                        log.info("🚨 volvió el stock (ficha): %s $%s", w["name"][:50], int(info.price))
+                self.st.commit()
+            await asyncio.sleep(max(5, min(every, deadline - time.monotonic() - 50)))
+
+    async def telegram_loop(self, deadline: float, every: float = 60) -> None:
+        from .notifier import Telegram
+        tg = Telegram(self.st)
+        if not tg.enabled:
+            return
+        while True:
+            await asyncio.to_thread(tg.poll)
+            n = await asyncio.to_thread(tg.flush)
+            if n:
+                log.info("📨 %d alerta(s) enviadas por Telegram", n)
+            if time.monotonic() > deadline - every:
+                break
+            await asyncio.sleep(every)
+
     # ---------- ventana ----------
     async def run_window(self, minutes: float) -> WindowStats:
         deadline = time.monotonic() + minutes * 60
@@ -263,7 +315,8 @@ class Monitor:
         log.info("▶️ ventana %.0f min · runner=%s · %d fuentes · tiendas: %s",
                  minutes, self.runner, len(self.sources), ", ".join(stores))
         try:
-            await asyncio.gather(self.fast_loop(deadline), *(self.crawl_store(s, deadline) for s in stores))
+            await asyncio.gather(self.fast_loop(deadline), self.watch_loop(deadline), self.telegram_loop(deadline),
+                                 *(self.crawl_store(s, deadline) for s in stores))
         finally:
             await self.fetcher.close()
             for f in self.fetchers.values():

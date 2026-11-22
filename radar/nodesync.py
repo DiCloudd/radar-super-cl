@@ -57,7 +57,10 @@ def _ingest_file(st: Storage, path: Path) -> tuple[int, int]:
         p = Product(**{k: d[k] for k in FIELDS}, promos=promos, alt_eans=d.get("alt_eans", []),
                     found_at=d["found_at"])
         p.in_stock, p.marketplace = bool(p.in_stock), bool(p.marketplace)
-        changed, _ = st.upsert(p)
+        changed, prev = st.upsert(p)
+        if prev is not None and not prev["in_stock"] and p.in_stock:
+            from . import watch
+            watch.on_reading(st, p.key, p.name, p.store, p.url, p.price, True, p.image)
         n += 1
         changes += int(changed)
     st.commit()

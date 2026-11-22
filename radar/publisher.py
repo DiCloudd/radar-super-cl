@@ -82,6 +82,12 @@ def _confirmed_by_others(x: dict, groups: dict, members: dict) -> bool:
     return any(0.5 * o <= x["price"] <= 1.5 * o for o in others)
 
 
+def _tg_status(st: Storage) -> dict:
+    from .notifier import Telegram
+    s = Telegram(st).status()
+    return {"enabled": s["enabled"], "linked": s["linked"], "code": s["code"]}
+
+
 def _record_errors(st: Storage, findings, by_key) -> None:
     """Tabla errors (🏆 salón de la fama): abre los nuevos, cierra los que desaparecieron."""
     now = now_iso()
@@ -92,6 +98,10 @@ def _record_errors(st: Storage, findings, by_key) -> None:
             st.db.execute("INSERT INTO errors(product_key,detected,verdict,price,reference,rule,payload) "
                           "VALUES(?,?,?,?,?,?,?)", (k, now, "sin verificar", f.price, f.reference, f.kind,
                                                     json.dumps({"basis": f.basis}, ensure_ascii=False)))
+            p = by_key.get(k) or {}
+            st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload) VALUES(?,?,?,?)", (now, k, f.kind,
+                          json.dumps({"name": p.get("name"), "store": p.get("store"), "url": p.get("url"),
+                                      "price": f.price, "why": f.basis, "image": p.get("image")}, ensure_ascii=False)))
     for k, row in open_rows.items():
         if k not in current:
             p = by_key.get(k)
@@ -158,12 +168,21 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
 
     fl = {kind: sorted([f for f in findings if f.kind == kind], key=lambda f: -f.pct)
           for kind in ("error", "godzilla", "ganga")}
+    from . import watch as watchmod
+    flagged = {f.key: {"error": "💥 error", "godzilla": "🦖 Godzilla", "ganga": "🔥 ganga"}[f.kind] for f in findings}
+    flagged.update({d["k"]: f"⚡ bajó {d['pct']}%" for d in drops if d["k"] not in flagged})
+    # las bajadas solo se calculan con stock; para vigilar, también las que quedaron agotadas tras bajar
+    for k, h in history.items():
+        x = by_key.get(k)
+        if x and not x["in_stock"] and len(h) >= 2 and h[-2][1] > x["price"] >= 0.4 * h[-2][1] and k not in flagged:
+            flagged[k] = f"⚡ bajó {round(100 * (1 - x['price'] / h[-2][1]))}%"
+    watchlist = watchmod.build_watchlist(st, rows, flagged)
     hof = [dict(r) for r in st.db.execute(
         "SELECT product_key k, detected, ended, end_reason, price, reference, rule FROM errors "
         "ORDER BY id DESC LIMIT 100")]
 
     core_keys, seen = [], set()
-    for k in ([f.key for f in fl["error"]] + [f.key for f in fl["godzilla"]] + [h["k"] for h in hof]
+    for k in (list(watchlist) + [f.key for f in fl["error"]] + [f.key for f in fl["godzilla"]] + [h["k"] for h in hof]
               + [d["k"] for d in drops[:300]] + [f.key for f in fl["ganga"][:600]]
               + [k for c in compare[:600] for k in c["keys"]] + [x["key"] for x in offers[:800]]):
         if k not in seen and k in by_key:
@@ -210,6 +229,9 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         "drops": drops[:300], "errors": [fdict(f) for f in fl["error"]],
         "godzilla": [fdict(f) for f in fl["godzilla"]], "gangas": [fdict(f) for f in fl["ganga"][:600]],
         "hall": hof, **(extra or {}),
+        "watch": [{"k": k, "price": w["price"], "reason": w.get("reason"), "since": w["since"][:16],
+                   "checked": (w.get("checked") or "")[:16]} for k, w in watchlist.items()],
+        "telegram": _tg_status(st),
     }
     (out / "data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     allp = [_compact(x, groups.get(x["key"])) for x in rows]

@@ -128,6 +128,7 @@ function applyTheme(){ const t = LS.get("theme", null); if (t) document.document
 applyTheme();
 
 // ---------- datos ----------
+let WATCHED = new Set();
 function index(list){ for (const p of list){ if (!BY[p.k] || !BY[p.k].h) BY[p.k] = p; if (p.g) (GM[p.g] = GM[p.g] || new Set()).add(p.k); } }
 // ---------- acceso por dispositivo (cifrado de extremo a extremo) ----------
 const ENC = new TextEncoder();
@@ -205,7 +206,7 @@ async function load(){
   if (!DKEY) return lockScreen();
   document.querySelector("nav.tab").hidden = false;
   D = await openSealed("data.json");
-  index(D.core);
+  index(D.core); WATCHED = new Set((D.watch || []).map(w => w.k));
   const ago = Math.max(0, Math.round((Date.now() - new Date(D.generated)) / 60000));
   $("#upd").textContent = `Actualizado hace ${ago < 1 ? "menos de 1" : ago} min · ${D.counts.products.toLocaleString("es-CL")} productos · ${Object.keys(D.stores).length} cadenas`;
   const ne = D.errors.length + D.godzilla.length; if (ne) { $("#nerr").textContent = ne; $("#nerr").hidden = false; }
@@ -234,7 +235,7 @@ function groupCard(p, extra = ""){
       ${x.u ? `<span class="u">${fmt(x.u)}/${esc(x.un)}</span>` : ""}
       ${x.w ? `<span class="tag y2">≈${esc(x.w)} · peso variable</span>` : ""}
       ${x.mk ? `<span class="tag">otro vendedor</span>` : ""}
-      ${x.st === 0 ? `<span class="tag r2">agotado</span>` : ""}
+      ${x.st === 0 ? `<span class="tag r2">agotado</span>${WATCHED.has(x.k) ? `<span class="tag y2">👀 te aviso si vuelve</span>` : ""}` : ""}
       ${!card && x.c ? `<span class="tag">💳 ${fmt(x.c)}</span>` : ""}
       <span class="pz">${fmt(price(x))}${x.l ? `<s>${fmt(x.l)}</s>` : ""}</span></div>`).join("")}</div>
     <div class="foot">${rows.length > 1 ? `<span class="tag g2">ahorras ${fmt(save)} en ${esc(SN(rows[0].s))}</span>` : `<span class="tag">solo en ${esc(SN(rows[0].s))}</span>`}
@@ -310,6 +311,7 @@ function ofertas(){
   const sec = LS.get("osec", D.errors.length ? "errores" : "gangas");
   const C = D.counts;
   const tabs = [["errores", "💥 Errores", D.errors.length + D.godzilla.length], ["gangas", "🔥 Gangas", D.gangas.length],
+    ["vigilando", "🚨 Vigilando", (D.watch || []).length],
     ["bajadas", "⚡ Bajaron", D.drops.length], ["descuentos", "🏷️ Descuentos", D.offers.length]];
   $("#main").innerHTML = `<div class="chips">${tabs.map(([k, t, n]) => `<button class="chip ${sec === k ? "on" : ""}" data-sec="${k}">${t} <small>${n}</small></button>`).join("")}</div><div id="ol"></div>`;
   document.querySelectorAll("[data-sec]").forEach(b => b.onclick = () => { LS.set("osec", b.dataset.sec); ofertas(); });
@@ -322,6 +324,13 @@ function ofertas(){
     else paged($("#el"), dedupeF(list), f => groupCard(BY[f.k], why(`${f.kind} · ${f.why}`)));
   } else if (sec === "gangas"){
     paged(el, dedupeF(D.gangas), f => groupCard(BY[f.k], why(`🔥 ${f.pct}% más barato que en otras cadenas`, "g2")));
+  } else if (sec === "vigilando"){
+    const tg = D.telegram || {};
+    el.innerHTML = `<div class="hint">Ofertas buenas que están <b>agotadas</b>. El radar revisa su ficha cada ~4 min y
+      ${tg.linked ? "<b>te avisa por Telegram</b>" : "te avisará por Telegram (actívalo en ⋯ Más)"} apenas vuelvan a tener stock al mismo precio.</div><div id="wl" style="margin-top:10px"></div>`;
+    const ws = dedupeF(D.watch || []);
+    if (!ws.length) $("#wl").innerHTML = `<div class="empty">No hay ofertas agotadas en vigilancia ahora.</div>`;
+    else paged($("#wl"), ws, w => groupCard(BY[w.k], why(`🚨 vigilando a ${fmt(w.price)} · ${w.reason || ""}${w.checked ? " · revisado " + w.checked.slice(11) : ""}`, "y2")));
   } else if (sec === "bajadas"){
     const ds = dedupeF(D.drops);
     if (!ds.length) el.innerHTML = `<div class="empty">Aún sin bajadas en las últimas 48 h.</div>`;
@@ -383,6 +392,11 @@ function mas(){
     ${Object.entries(h).map(([s, x]) => `<div class="row"><span class="st ${s}">${esc(x.name)}</span>
       <div style="font-size:14px;min-width:0">${x.products ? (x.blocked ? "⏸️ en pausa (" + esc(x.blocked.reason) + ")" : "✅ funcionando") : "⛔ no disponible"}
       <div class="mut" style="font-size:12.5px">${x.products ? x.products.toLocaleString("es-CL") + " productos · " + x.with_ean.toLocaleString("es-CL") + " con código de barras" : esc(x.note)}</div></div></div>`).join("")}
+    <div class="sec"><h2>📨 Avisos por Telegram</h2></div>
+    ${(() => { const tg = D.telegram || {};
+      if (tg.linked) return `<div class="row">✅ <div>Telegram vinculado. Te aviso errores de precio y cuando vuelvan las ofertas agotadas.</div></div>`;
+      if (!tg.enabled) return `<div class="row">⏳ <div style="font-size:14px">Falta crear el bot y guardar su token en GitHub (te guío en el chat).</div></div>`;
+      return `<div class="row">🔗 <div style="font-size:14px">Abre tu bot en Telegram y envíale:<div style="font-size:22px;font-weight:800;margin-top:4px">/start ${esc(tg.code)}</div><div class="mut">Este código solo se ve en esta app privada.</div></div></div>`; })()}
     <div class="sec"><h2>🔐 Dispositivos</h2><span>este: ${esc(ME ? ME.id : "")}</span></div>
     ${(D.devices || []).length ? `<table><tr><th>Código</th><th>Apodo / equipo</th><th>Estado</th></tr>${D.devices.map(d => `<tr><td><b>${esc(d.id)}</b>${ME && d.id === ME.id ? " (este)" : ""}</td><td>${esc(d.name || "—")}<div class="mut">${esc(d.desc)} · desde ${esc(d.added)}</div></td><td>${d.status === "ok" ? "✅ habilitado" : "⛔ bloqueado"}</td></tr>`).join("")}</table>` : ""}
     <p><a class="btn s" href="https://github.com/DiCloudd/radar-super-cl/actions/workflows/dispositivos.yml" target="_blank" rel="noopener">Aprobar o bloquear (GitHub)</a></p>

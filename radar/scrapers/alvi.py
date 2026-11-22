@@ -41,6 +41,12 @@ class AlviScraper(UnimarcScraper):
                     raw[str(p.get("itemId") or p.get("sku"))] = p
         for prod in res.products:
             p = raw.get(prod.sku) or {}
+            # Alvi publica la ficha en /product/<slug> (el detailUrl "/<slug>/p" da 404)
+            slug = (p.get("detailUrl") or "").strip("/")
+            if slug.endswith("/p"):
+                slug = slug[:-2]
+            if slug:
+                prod.url = f"{self.base_url}/product/{slug}"
             for step in p.get("priceSteps") or []:
                 q, pp = int(step.get("minQuantity") or 0), money(step.get("promotionalPrice"))
                 if q > 1 and pp:
