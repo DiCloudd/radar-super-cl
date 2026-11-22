@@ -14,7 +14,7 @@ from playwright.async_api import async_playwright
 
 async def main(url: str, headed: bool) -> None:
     async with async_playwright() as p:
-        b = await p.chromium.launch(headless=not headed)
+        b = await p.chromium.launch(headless=not headed, channel="msedge" if "--edge" in sys.argv else None)
         page = await b.new_page(locale="es-CL")
         resp = await page.goto(url, wait_until="domcontentloaded", timeout=60000)
         print("status inicial:", resp.status if resp else None)

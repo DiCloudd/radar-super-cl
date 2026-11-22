@@ -51,9 +51,10 @@ def _utc() -> datetime:
 
 class Monitor:
     def __init__(self, storage: Storage, sources: list[Source], runner: str = config.MONITOR_RUNNER,
-                 fetcher: Fetcher | None = None, on_changes=None):
+                 fetcher: Fetcher | None = None, on_changes=None, fetchers: dict | None = None):
         self.st, self.sources, self.runner = storage, sources, runner
         self.fetcher = fetcher or Fetcher()
+        self.fetchers = fetchers or {}      # tienda -> fetcher especial (ej. navegador real para Tottus)
         self.stats = WindowStats()
         self.on_changes = on_changes          # callback(list[Change]) -> fase 4 (análisis/alertas)
         self.fast_idle = asyncio.Event()
@@ -94,9 +95,12 @@ class Monitor:
             return None
         url = sc.page_url(src, page)
         t0 = time.monotonic()
+        fetcher = self.fetchers.get(src.store, self.fetcher)
         try:
-            r = await self.fetcher.get(url, referer=sc.referer(src), cookies=sc.cookies,
-                                       headers=sc.extra_headers())
+            if fetcher is not self.fetcher and not await self.fetcher.allowed(url):
+                raise RobotsDisallowed(f"robots.txt no permite {url}")   # robots.txt también con navegador
+            r = await fetcher.get(url, referer=sc.referer(src), cookies=sc.cookies,
+                                  headers=sc.extra_headers())
             self.stats.requests += 1
         except BlockedError as e:
             self.stats.requests += 1
@@ -262,6 +266,8 @@ class Monitor:
             await asyncio.gather(self.fast_loop(deadline), *(self.crawl_store(s, deadline) for s in stores))
         finally:
             await self.fetcher.close()
+            for f in self.fetchers.values():
+                await f.close()
             self.st.end_run(run_id, requests=self.stats.requests, products=self.stats.products,
                             changes=self.stats.changes, blocked=",".join(self.stats.blocked) or None)
         return self.stats

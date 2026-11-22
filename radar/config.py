@@ -54,8 +54,19 @@ class Source:
         return self.enabled and runner in self.runners
 
 
-# Tiendas que solo se activan con autorización del socio (llave en GitHub Secrets)
+# Tiendas que necesitan algo extra para activarse:
+#  - en la nube: la llave de socio (GitHub Secret)
+#  - en el nodo de Chile (tu PC): TOTTUS_BROWSER=1 -> se lee con Edge real (sin evasión)
 REQUIRES_ENV = {"tottus": "TOTTUS_PARTNER_TOKEN"}
+BROWSER_ENV = {"tottus": "TOTTUS_BROWSER"}
+
+
+def store_enabled(store: str, runner: str) -> bool:
+    if store not in REQUIRES_ENV:
+        return True
+    if os.environ.get(REQUIRES_ENV[store], "").strip():
+        return True
+    return runner in ("chile", "local") and os.environ.get(BROWSER_ENV.get(store, ""), "") == "1"
 
 
 def load_sources(path: Path = SOURCES_FILE, runner: str | None = None) -> list[Source]:
@@ -66,6 +77,5 @@ def load_sources(path: Path = SOURCES_FILE, runner: str | None = None) -> list[S
         merged = {**defaults.get(raw["store"], {}), **raw}
         out.append(Source(**merged))
     if runner:
-        out = [s for s in out if s.active_on(runner)
-               and (s.store not in REQUIRES_ENV or os.environ.get(REQUIRES_ENV[s.store], "").strip())]
+        out = [s for s in out if s.active_on(runner) and store_enabled(s.store, runner)]
     return out

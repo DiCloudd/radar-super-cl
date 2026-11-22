@@ -36,6 +36,16 @@ def export_node(st: Storage, stores: list[str], out: Path, since: str | None = N
 
 
 def ingest(st: Storage, path: Path) -> tuple[int, int]:
+    if path.is_dir():
+        tot = ch = 0
+        for f in sorted(path.glob("*.json.gz")):
+            a, b = ingest(st, f)
+            tot, ch = tot + a, ch + b
+        return tot, ch
+    return _ingest_file(st, path)
+
+
+def _ingest_file(st: Storage, path: Path) -> tuple[int, int]:
     """Integra el archivo del nodo. Devuelve (productos, cambios). Idempotente por found_at."""
     data = json.loads(gzip.decompress(path.read_bytes()))
     n = changes = 0

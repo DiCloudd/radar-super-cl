@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import asyncio
 import logging
 import sys
@@ -92,7 +93,12 @@ def main(argv: list[str] | None = None) -> int:
             keep = set(a.only.split(","))
             sources = [x for x in sources if x.store in keep]
         st = Storage(config.DB_PATH)
-        mon = Monitor(st, sources)
+        fetchers = {}
+        if any(x.store == "tottus" for x in sources) and os.environ.get("TOTTUS_BROWSER") == "1" \
+                and not os.environ.get("TOTTUS_PARTNER_TOKEN"):
+            from .browser_fetch import BrowserFetcher
+            fetchers["tottus"] = BrowserFetcher()
+        mon = Monitor(st, sources, fetchers=fetchers)
         stats = asyncio.run(mon.run_window(a.minutes))
         print("\n══════ RESUMEN DE LA VENTANA ══════")
         print(f"peticiones={stats.requests} páginas={stats.pages} lecturas={stats.products} "
