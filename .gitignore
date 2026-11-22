@@ -8,3 +8,4 @@ __pycache__/
 probe_out/
 .env
 .claude/settings.local.json
+!access/devices.enc
