@@ -261,6 +261,14 @@ class Monitor:
             self.st.commit()
 
     # ---------- 🚨 vigilancia activa de reposición ----------
+    @staticmethod
+    async def _safe(coro, name: str) -> None:
+        """Las funciones extra (vigilancia, avisos) nunca deben tumbar la ventana de monitoreo."""
+        try:
+            await coro
+        except Exception as e:  # noqa: BLE001
+            log.error("⚠️ %s falló (%s); la ventana sigue", name, type(e).__name__)
+
     async def watch_loop(self, deadline: float, every: float = 240, per_store: int = 4) -> None:
         stores = {s.store for s in self.sources} & watch.PDP_STORES
         while time.monotonic() < deadline - 60 and stores:
@@ -299,10 +307,14 @@ class Monitor:
         if not tg.enabled:
             return
         while True:
-            await asyncio.to_thread(tg.poll)
-            n = await asyncio.to_thread(tg.flush)
-            if n:
-                log.info("📨 %d alerta(s) enviadas por Telegram", n)
+            try:
+                # mismo hilo que la BD (SQLite no admite otro hilo); cada llamada tarda < 1 s
+                tg.poll()
+                n = tg.flush()
+                if n:
+                    log.info("📨 %d alerta(s) enviadas por Telegram", n)
+            except Exception as e:  # noqa: BLE001 - Telegram nunca debe tumbar la ventana
+                log.warning("telegram: %s", type(e).__name__)
             if time.monotonic() > deadline - every:
                 break
             await asyncio.sleep(every)
@@ -315,7 +327,8 @@ class Monitor:
         log.info("▶️ ventana %.0f min · runner=%s · %d fuentes · tiendas: %s",
                  minutes, self.runner, len(self.sources), ", ".join(stores))
         try:
-            await asyncio.gather(self.fast_loop(deadline), self.watch_loop(deadline), self.telegram_loop(deadline),
+            await asyncio.gather(self.fast_loop(deadline), self._safe(self.watch_loop(deadline), "vigilancia"),
+                                 self._safe(self.telegram_loop(deadline), "telegram"),
                                  *(self.crawl_store(s, deadline) for s in stores))
         finally:
             await self.fetcher.close()

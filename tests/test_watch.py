@@ -106,3 +106,39 @@ def test_telegram_link_requires_code_and_sends_alerts(monkeypatch):
 def test_render_error_message_escapes_html():
     t = render("error", {"name": "<b>x</b>", "store": "jumbo", "url": "https://j", "price": 990, "why": "50%"})
     assert "&lt;b&gt;x&lt;/b&gt;" in t and "$990" in t
+
+
+def test_telegram_loop_runs_in_db_thread_and_never_crashes_window(monkeypatch):
+    # Regresión: tg.poll se llamaba en otro hilo -> sqlite3.ProgrammingError -> ventana caída
+    import asyncio
+    import time as _t
+
+    import radar.notifier as nt
+    from radar.monitor import Monitor
+    st = Storage(":memory:")
+    calls = []
+
+    class T(nt.Telegram):
+        def __init__(self, s):
+            super().__init__(s, token="x")
+
+        def _call(self, method, **p):
+            calls.append(method)
+            if method == "getUpdates":
+                self.st.get_meta("tg_offset", 0)    # usa la BD: falla si no es el mismo hilo
+                return []
+            raise RuntimeError("red caída")
+
+    monkeypatch.setattr(nt, "Telegram", T)
+    m = Monitor(st, [], runner="test")
+    asyncio.run(m._safe(m.telegram_loop(_t.monotonic() + 1, every=60), "telegram"))
+    assert "getUpdates" in calls
+
+
+def test_safe_wrapper_swallows_errors():
+    import asyncio
+    from radar.monitor import Monitor
+
+    async def boom():
+        raise ValueError("x")
+    asyncio.run(Monitor._safe(boom(), "prueba"))   # no lanza
