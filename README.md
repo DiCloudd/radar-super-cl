@@ -33,6 +33,15 @@ python -m pytest -q
 
 ## Nodo opcional en Chile (para Unimarc y Alvi)
 
+**En Windows (este PC):** `powershell -ExecutionPolicy Bypass -File tools
+ode_windows.ps1 -Install`
+crea una copia en `%LOCALAPPDATA%adar-node`, su entorno Python y la tarea programada oculta
+`RadarSuperNodo` (inicia al iniciar sesión). Log: `%LOCALAPPDATA%adar-node
+ode.log`.
+Para quitarlo: `... node_windows.ps1 -Uninstall`.
+
+**En Linux / Android (Termux) / Raspberry Pi:**
+
 Unimarc bloquea las IPs de GitHub pero responde normal desde Chile. Un PC viejo o un
 Android con Termux puede correr el mismo monitor solo para Unimarc:
 
