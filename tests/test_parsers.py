@@ -215,3 +215,21 @@ def test_tottus_partner_header_only_with_token(monkeypatch):
     assert sc.extra_headers() == {}
     monkeypatch.setenv("TOTTUS_PARTNER_TOKEN", "llave-de-prueba")
     assert sc.extra_headers() == {"X-Radar-Partner": "llave-de-prueba"}
+
+
+# ---------------- Shopify (Super9) ----------------
+def test_shopify_products_json():
+    s = src("super9", "https://super9.cl/products.json", "todos")
+    res = SCRAPERS["super9"].parse_listing((FX / "shopify_products.json").read_text(encoding="utf-8"), s)
+    assert len(res.products) == 2                      # el de precio 0 se descarta
+    a = res.products[0]
+    assert a.price == 1690 and a.list_price == 1990    # "1690.00" -> 1690 (no 169000)
+    assert a.ean == "7801420220138" and a.url == "https://super9.cl/products/arroz-tucapel-1kg"
+    b = res.products[1]
+    assert b.price == 1290 and b.name == "Bebida Coca-Cola 591 ml" and not b.in_stock
+    assert SCRAPERS["super9"].page_url(s, 2) == "https://super9.cl/products.json?limit=250&page=2"
+
+
+def test_shopify_empty_catalog():
+    s = src("super9", "https://super9.cl/products.json", "todos")
+    assert SCRAPERS["super9"].parse_listing('{"products":[]}', s).products == []

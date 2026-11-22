@@ -774,3 +774,13 @@ name = "tottus-frutas-verduras"
 store = "tottus"
 category = "frutas y verduras"
 url = "https://www.tottus.cl/tottus-cl/lista/CATG27070/Frutas-y-Verduras?sortBy=derived.currentPrice%2Casc"
+
+# ───────────────────────── Super9 / Supermercados el 9 (Shopify) ─────────────────────────
+# Hoy su tienda online no publica productos: la fuente queda lista y se activa sola cuando publiquen.
+[[source]]
+name = "super9-catalogo"
+store = "super9"
+category = "todos"
+url = "https://super9.cl/products.json"
+max_pages = 10
+runners = ["cloud", "chile", "local"]

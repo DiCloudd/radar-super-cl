@@ -1,0 +1,9 @@
+{"products":[
+{"id":101,"title":"Arroz Grado 1 Tucapel 1 kg","handle":"arroz-tucapel-1kg","vendor":"Tucapel","product_type":"Despensa",
+ "images":[{"src":"https://cdn.shopify.com/s/files/1/arroz.jpg"}],
+ "variants":[{"id":9001,"title":"Default Title","price":"1690.00","compare_at_price":"1990.00","sku":"A1","barcode":"7801420220138","available":true}]},
+{"id":102,"title":"Bebida Coca-Cola","handle":"coca-cola","vendor":"Coca-Cola","product_type":"Bebidas","images":[],
+ "variants":[{"id":9002,"title":"1,5 L","price":"1990","compare_at_price":null,"sku":"B1","barcode":"","available":true},
+             {"id":9003,"title":"591 ml","price":"1290","compare_at_price":"1490","sku":"B2","barcode":"7801610000571","available":false}]},
+{"id":103,"title":"Producto sin precio","handle":"x","vendor":"","images":[],"variants":[{"id":9004,"title":"Default Title","price":"0","available":true}]}
+]}
