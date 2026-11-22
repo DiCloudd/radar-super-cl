@@ -135,3 +135,10 @@ def test_internal_store_eans_not_used_for_matching():
 
 def test_variable_weight_has_no_name_key():
     assert name_key("Pollo Trutro Entero Envasado 900 g Ariztia", "Ariztia", "≈0.9 kg") is None
+
+
+def test_variable_weight_not_grouped_even_with_same_ean():
+    rows = [row("a:1", "acuenta", "Pollo Trutro Entero Envasado 900 g Ariztia", "Ariztia", ean="7804115002446", net="≈0.9 kg"),
+            row("l:1", "lider", "Pollo Trutro Entero Envasado", "Ariztia", ean="7804115002446", net="≈0.7 kg")]
+    g, _ = group_products(rows)
+    assert not g

@@ -74,6 +74,12 @@ def _history(st: Storage, since: str) -> dict[str, list[tuple[str, float]]]:
     return h
 
 
+def _confirmed_by_others(x: dict, groups: dict, members: dict) -> bool:
+    """El precio nuevo es coherente con el mismo producto en otra cadena (±50%)."""
+    others = [o["price"] for o in members.get(groups.get(x["key"]), []) if o["store"] != x["store"]]
+    return any(0.5 * o <= x["price"] <= 1.5 * o for o in others)
+
+
 def _record_errors(st: Storage, findings, by_key) -> None:
     """Tabla errors (🏆 salón de la fama): abre los nuevos, cierra los que desaparecieron."""
     now = now_iso()
@@ -141,7 +147,9 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         if x and len(h) >= 2 and x["in_stock"] and not x["marketplace"] \
                 and not (x["net_content"] or "").startswith("≈") \
                 and h[-1][1] == x["price"] and h[-2][1] > x["price"] \
-                and h[-1][0] >= (now - timedelta(hours=48)).isoformat():
+                and h[-1][0] >= (now - timedelta(hours=48)).isoformat() \
+                and (x["price"] >= 0.4 * h[-2][1] or _confirmed_by_others(x, groups, members)):
+            # caídas >60% sin respaldo de otra cadena suelen ser cambio de vendedor/pack: no se muestran
             drops.append({"k": k, "old": h[-2][1], "new": x["price"], "ts": h[-1][0],
                           "pct": round(100 * (1 - x["price"] / h[-2][1]), 1)})
     drops.sort(key=lambda d: -d["pct"])

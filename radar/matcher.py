@@ -171,6 +171,8 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
     store_of = {r["key"]: r["store"] for r in rows}
     for r in rows:
         uf.find(r["key"])
+        if (r.get("net_content") or "").startswith("≈"):
+            continue   # peso variable: el precio depende del peso real; ni por EAN se compara
         eans = {r.get("ean")} | set((r.get("alt_eans") or "").split(","))
         for e in (e for e in eans if usable_ean(e)):
             if e in by_ean:
