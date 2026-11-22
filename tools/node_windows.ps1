@@ -13,7 +13,8 @@ param(
 )
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$Base = Join-Path $env:LOCALAPPDATA "radar-node"
+# carpeta en el perfil del usuario (no en AppData: algunas apps empaquetadas la redirigen)
+$Base = Join-Path $env:USERPROFILE "radar-node"
 $Repo = Join-Path $Base "repo"
 $Venv = Join-Path $Base "venv"
 $Py = Join-Path $Venv "Scripts\python.exe"

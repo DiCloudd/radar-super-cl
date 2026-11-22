@@ -35,8 +35,8 @@ python -m pytest -q
 
 **En Windows (este PC):** `powershell -ExecutionPolicy Bypass -File tools
 ode_windows.ps1 -Install`
-crea una copia en `%LOCALAPPDATA%adar-node`, su entorno Python y la tarea programada oculta
-`RadarSuperNodo` (inicia al iniciar sesión). Log: `%LOCALAPPDATA%adar-node
+crea una copia en `%USERPROFILE%adar-node`, su entorno Python y la tarea programada oculta
+`RadarSuperNodo` (inicia al iniciar sesión). Log: `%USERPROFILE%adar-node
 ode.log`.
 Para quitarlo: `... node_windows.ps1 -Uninstall`.
 
