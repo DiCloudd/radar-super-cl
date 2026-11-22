@@ -74,7 +74,9 @@ jobs:
           fi
           cp data/radar.db.enc /tmp/site/db/radar.db.enc
           cp dashboard/* /tmp/site/
-          python -m radar.main publish /tmp/site || echo "::warning::falló la exportación de la app"
+          # nunca dejar datos en claro (versiones antiguas de la app los publicaban sin cifrar)
+          rm -f /tmp/site/data.json /tmp/site/products.json
+          python -m radar.main publish /tmp/site || { echo "::warning::falló la exportación de la app"; rm -f /tmp/site/data.json /tmp/site/products.json; }
           printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
           touch /tmp/site/.nojekyll
           cd /tmp/site

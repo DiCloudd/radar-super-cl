@@ -84,3 +84,25 @@ def test_error_without_other_stores_needs_big_own_drop():
     assert kinds(analyze(rows, {}, {"a:1": [(ts(100), 12990), (ts(1), 2990)]}, NOW), "a:1") == ["error"]
     rows = [r("a:1", "acuenta", 690)]
     assert "error" not in kinds(analyze(rows, {}, {"a:1": [(ts(100), 2490), (ts(1), 690)]}, NOW), "a:1")
+
+
+def test_seller_switch_is_not_error():
+    # Regresión (captura real): "Cerveza Lata Sin Alcohol 330 ml" en Lider pasó de $18.990
+    # (otro vendedor / pack) a $1.690. Sin otra cadena que lo confirme NO es error ni Godzilla.
+    rows = [r("l:1", "lider", 1690, name="Cerveza Lata Sin Alcohol 330 ml")]
+    hist = {"l:1": [(ts(100), 18990), (ts(2), 1690)]}
+    assert analyze(rows, {}, hist, NOW) == []
+
+
+def test_own_only_error_requires_previous_price_held_12h():
+    rows = [r("a:1", "acuenta", 2990)]
+    hist = {"a:1": [(ts(5), 12990), (ts(1), 2990)]}   # el precio alto duró solo 4 h
+    assert analyze(rows, {}, hist, NOW) == []
+
+
+def test_variable_weight_products_never_flagged():
+    # Regresión: pollo por peso de Acuenta comparado contra el precio total de Lider
+    g = {"a:1": "g", "l:1": "g"}
+    rows = [r("a:1", "acuenta", 3390, name="Pollo entero con Menudencia", net_content="≈2.3 kg"),
+            r("l:1", "lider", 7797, name="Pollo entero con Menudencia 2,3 Kg")]
+    assert analyze(rows, g, {}, NOW) == []

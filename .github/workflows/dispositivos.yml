@@ -1,0 +1,55 @@
+name: dispositivos
+
+# Aprobar / bloquear dispositivos de la app. Se usa desde la app de GitHub en el teléfono:
+# Actions -> dispositivos -> Run workflow. El cambio rige desde la próxima actualización de datos.
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: "Qué hacer"
+        type: choice
+        options: [aprobar, bloquear, desbloquear, eliminar, listar]
+        default: aprobar
+      solicitud:
+        description: "Solicitud completa (RADAR1...) para aprobar, o el código XXXX-XXXX"
+        required: false
+        default: ""
+      apodo:
+        description: "Apodo opcional (ej. iPhone principal)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dispositivos
+  cancel-in-progress: false
+
+jobs:
+  cambiar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      DB_KEY: ${{ secrets.DB_KEY }}
+      ACCION: ${{ inputs.accion }}
+      SOLICITUD: ${{ inputs.solicitud }}
+      APODO: ${{ inputs.apodo }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Aplicar cambio
+        run: python -m radar.main device "$ACCION" --code "$SOLICITUD" --name "$APODO" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Guardar lista cifrada
+        if: inputs.accion != 'listar'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add access/devices.enc
+          git commit -q -m "dispositivos: $ACCION" || { echo "sin cambios"; exit 0; }
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q && break; sleep 5; done
+          echo "Rige desde la próxima actualización de datos (máx. ~25 min)." >> "$GITHUB_STEP_SUMMARY"

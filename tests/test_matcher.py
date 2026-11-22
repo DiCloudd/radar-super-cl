@@ -120,3 +120,18 @@ def test_never_two_products_of_same_store():
     g, _ = group_products(rows)
     members = [k for k in g if g[k] == g.get("u:1")]
     assert len([k for k in members if k.startswith("s:")]) <= 1
+
+
+def test_internal_store_eans_not_used_for_matching():
+    from radar.matcher import usable_ean
+    assert not usable_ean("2164920000002")      # pesable / código interno
+    assert not usable_ean("0400006130211")
+    assert usable_ean("7804115001395")
+    rows = [row("a:1", "acuenta", "Pollo entero con Menudencia 1900 Kg Super pollo", "Super pollo", ean="2164920000002"),
+            row("l:1", "lider", "Pollo entero con Menudencia 2,3 Kg", "Super pollo", ean="2164920000002")]
+    g, _ = group_products(rows)
+    assert not g
+
+
+def test_variable_weight_has_no_name_key():
+    assert name_key("Pollo Trutro Entero Envasado 900 g Ariztia", "Ariztia", "≈0.9 kg") is None

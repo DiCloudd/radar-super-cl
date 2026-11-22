@@ -158,3 +158,11 @@ def test_node_export_ingest_roundtrip(tmp_path):
 @pytest.mark.parametrize("val", [config.MIN_SPACING_S])
 def test_spacing_is_courteous(val):
     assert val >= 4
+
+
+def test_marketplace_prices_flagged_in_history():
+    st = Storage(":memory:")
+    st.upsert(prod(price=18990, marketplace=True))
+    st.upsert(prod(price=1690))
+    rows = [dict(r) for r in st.db.execute("SELECT price, marketplace FROM prices ORDER BY id")]
+    assert rows == [{"price": 18990, "marketplace": 1}, {"price": 1690, "marketplace": 0}]

@@ -52,6 +52,9 @@ class Storage:
         cols = {r[1] for r in self.db.execute("PRAGMA table_info(products)")}
         if "alt_eans" not in cols:   # migración: EAN alternativos (Acuenta trae varios)
             self.db.execute("ALTER TABLE products ADD COLUMN alt_eans TEXT")
+        pcols = {r[1] for r in self.db.execute("PRAGMA table_info(prices)")}
+        if "marketplace" not in pcols:   # migración: el precio era de un vendedor externo
+            self.db.execute("ALTER TABLE prices ADD COLUMN marketplace INTEGER DEFAULT 0")
 
     def close(self) -> None:
         self.db.commit()
@@ -75,7 +78,8 @@ class Storage:
         promos = json.dumps([pr.__dict__ for pr in p.promos], ensure_ascii=False) if p.promos else None
         prev_d = dict(prev) if prev else None
         changed = (prev is None or prev["price"] != p.price or prev["list_price"] != p.list_price
-                   or prev["card_price"] != p.card_price or bool(prev["in_stock"]) != p.in_stock)
+                   or prev["card_price"] != p.card_price or bool(prev["in_stock"]) != p.in_stock
+                   or bool(prev["marketplace"]) != p.marketplace)
         ean = p.ean or (prev["ean"] if prev else None)   # el EAN no se pierde si el listado no lo trae
         self.db.execute(
             """INSERT INTO products(key,store,sku,name,brand,ean,url,image,category,net_content,price,
@@ -96,8 +100,9 @@ class Storage:
         )
         if changed:
             self.db.execute(
-                "INSERT INTO prices(product_key,ts,price,list_price,card_price,in_stock) VALUES(?,?,?,?,?,?)",
-                (p.key, ts, p.price, p.list_price, p.card_price, int(p.in_stock)))
+                "INSERT INTO prices(product_key,ts,price,list_price,card_price,in_stock,marketplace) "
+                "VALUES(?,?,?,?,?,?,?)",
+                (p.key, ts, p.price, p.list_price, p.card_price, int(p.in_stock), int(p.marketplace)))
         return changed and prev is not None, prev_d
 
     def set_ean(self, key: str, ean: str) -> None:

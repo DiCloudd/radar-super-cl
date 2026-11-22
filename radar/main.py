@@ -67,6 +67,11 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("stats")
     pb = sub.add_parser("publish")
     pb.add_argument("out", type=Path)
+    pb.add_argument("--no-seal", action="store_true", help="no cifrar (solo pruebas locales)")
+    dv = sub.add_parser("device")
+    dv.add_argument("action", choices=["aprobar", "bloquear", "desbloquear", "eliminar", "listar"])
+    dv.add_argument("--code", default="")
+    dv.add_argument("--name", default="")
     ne = sub.add_parser("node-export")
     ne.add_argument("out", type=Path)
     ne.add_argument("--stores", default="unimarc")
@@ -109,10 +114,29 @@ def main(argv: list[str] | None = None) -> int:
         st.close()
         return 0
     if a.cmd == "publish":
+        from . import access
         from .publisher import export
         st = Storage(config.DB_PATH)
-        print("exportado:", export(st, a.out))
+        devices = [] if a.no_seal else access.load_devices()
+        print("exportado:", export(st, a.out, extra={"devices": access.public_list(devices)}))
         st.close()
+        if not a.no_seal:
+            print("acceso:", access.seal(a.out, devices))
+        return 0
+    if a.cmd == "device":
+        from . import access
+        devices = access.load_devices()
+        if a.action == "listar":
+            for d in devices:
+                print(d["id"], d.get("status"), d.get("name") or "-", d.get("desc") or "")
+            return 0
+        try:
+            devices, msg = access.apply_action(devices, a.action, a.code, a.name)
+        except ValueError as e:
+            print("❌", e)
+            return 2
+        access.save_devices(devices)
+        print(msg)
         return 0
     if a.cmd in ("node-export", "ingest"):
         from . import nodesync

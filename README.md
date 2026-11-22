@@ -50,3 +50,19 @@ El script `tools/node_chile.sh` hace todo en bucle: ventana de 12 min, exporta y
 Respeta robots.txt, 1 petición a la vez por dominio con ≥4 s + jitter, headers normales de
 navegador. Nunca resuelve captchas ni evade protecciones: ante un bloqueo, la tienda se pausa
 con backoff exponencial y el resto sigue.
+
+## Acceso privado por dispositivo
+
+Los datos de la app se publican **cifrados** (AES-256-GCM). Solo los dispositivos aprobados
+reciben la llave (ECDH P-256 + HKDF), y cada uno genera su propia llave privada en el navegador,
+que nunca sale del teléfono. La lista de dispositivos se guarda cifrada en `access/devices.enc`.
+
+1. Abre la app en el dispositivo nuevo: verás su código (ej. `K7Q3-MZ2A`) y el botón **Enviar solicitud**.
+2. En la app de GitHub: **Actions → dispositivos → Run workflow**, acción `aprobar`, pega la solicitud
+   (`RADAR1...`) y un apodo neutro.
+3. Se activa en la próxima actualización de datos (máx. ~25 min).
+4. Para quitar acceso: acción `bloquear` con el código. Desde la siguiente actualización ese
+   dispositivo ya no puede descifrar los datos nuevos (la llave cambia en cada publicación).
+
+La app instalada en la pantalla de inicio del iPhone tiene almacenamiento propio: cuenta como otro
+dispositivo y también hay que aprobarla.

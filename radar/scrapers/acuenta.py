@@ -86,10 +86,24 @@ class AcuentaScraper(Scraper):
                 if not price:
                     continue
                 prev = money(p.get("previousPrice"))
-                eans = [e for e in (p.get("ean") or []) if isinstance(e, str) and e.isdigit()]
+                raw_eans = p.get("ean") or []
+                raw_eans = [raw_eans] if isinstance(raw_eans, str) else raw_eans
+                eans = [e for e in raw_eans if isinstance(e, str) and e.isdigit()]
+                # EAN de uso interno (pesables, prefijo 2) al final: no identifican el producto
+                eans.sort(key=lambda e: e.startswith("2"))
                 cont = content_from_subunit(p.get("subUnit"), p.get("subQty"))
                 unit_price = unit = None
                 net = None
+                weight = float(p.get("clickMultiplier") or 0)
+                if (p.get("unit") or "").lower() in ("kg", "kilo", "kilogramo") and weight > 0:
+                    # Producto POR PESO: "price" es $/kg y clickMultiplier el peso promedio.
+                    # El cliente paga price × peso (ej. $3.390/kg × 2,3 kg = $7.797).
+                    unit_price, unit = price, "kg"
+                    if prev:
+                        prev = round(prev * weight)
+                    price = round(price * weight)
+                    net = f"≈{weight:g} kg"           # "≈" = peso variable (no se compara ni alerta)
+                    cont = None
                 if cont:
                     amount, base = cont
                     q = amount / 1000 if base in ("g", "ml") else amount

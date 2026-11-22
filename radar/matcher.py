@@ -93,7 +93,19 @@ class NameKey:
     pack: int
 
 
+def usable_ean(e: str | None) -> bool:
+    """EAN válido para comparar entre cadenas. Los prefijos 02/04 y 2xx son de uso interno
+    (productos pesables, códigos de la propia tienda): el mismo código puede ser otro producto
+    en otra cadena, o el mismo producto con otra base de precio (por kg vs por unidad)."""
+    if not e or not e.isdigit() or len(e) < 8:
+        return False
+    e13 = e.zfill(13)
+    return not (e13.startswith("2") or e13.startswith("02") or e13.startswith("04"))
+
+
 def name_key(name: str, brand: str | None, net_content: str | None = None) -> NameKey | None:
+    if net_content and net_content.startswith("≈"):
+        return None   # peso variable: el precio depende del peso real, no se compara
     b = brand_key(brand)
     if not b or len(b) < 2 or is_small_format(name):
         return None
@@ -160,7 +172,7 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
     for r in rows:
         uf.find(r["key"])
         eans = {r.get("ean")} | set((r.get("alt_eans") or "").split(","))
-        for e in (e for e in eans if e and len(e) >= 8 and e.isdigit()):
+        for e in (e for e in eans if usable_ean(e)):
             if e in by_ean:
                 uf.union(by_ean[e], r["key"])
             else:
@@ -211,7 +223,7 @@ def group_products(rows: list[dict]) -> tuple[dict[str, str], dict[str, str]]:
                     continue
                 if a["key"] in ean_matched and b["key"] in ean_matched:
                     continue  # el EAN ya decidió (mismo grupo o productos distintos)
-                if a.get("ean") and b.get("ean") and a["ean"] != b["ean"] and \
+                if usable_ean(a.get("ean")) and usable_ean(b.get("ean")) and a["ean"] != b["ean"] and \
                         not ({a["ean"]} & set((b.get("alt_eans") or "").split(","))) and \
                         not ({b["ean"]} & set((a.get("alt_eans") or "").split(","))):
                     continue  # ambos tienen EAN y son distintos: son productos distintos

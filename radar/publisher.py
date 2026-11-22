@@ -55,6 +55,7 @@ def _compact(r, gid: str | None) -> dict:
         "p": r["price"], "l": r["list_price"], "c": r["card_price"], "u": round(up) if up else None, "un": un,
         "st": int(r["in_stock"] or 0), "img": small_img(r["image"]), "url": r["url"], "cat": r["category"] or "",
         "f": r["first_seen"][:10], "mk": int(r["marketplace"] or 0), "g": gid,
+        "w": (r["net_content"] or "")[1:] if (r["net_content"] or "").startswith("≈") else None,
     }
     if r["promos"]:
         try:
@@ -66,7 +67,9 @@ def _compact(r, gid: str | None) -> dict:
 
 def _history(st: Storage, since: str) -> dict[str, list[tuple[str, float]]]:
     h: dict[str, list[tuple[str, float]]] = defaultdict(list)
-    for row in st.db.execute("SELECT product_key, ts, price FROM prices WHERE ts >= ? ORDER BY id", (since,)):
+    # precios de vendedores externos (marketplace) no sirven de referencia: se excluyen
+    for row in st.db.execute("SELECT product_key, ts, price FROM prices WHERE ts >= ? "
+                             "AND COALESCE(marketplace, 0) = 0 ORDER BY id", (since,)):
         h[row["product_key"]].append((row["ts"], row["price"]))
     return h
 
@@ -90,7 +93,7 @@ def _record_errors(st: Storage, findings, by_key) -> None:
     st.commit()
 
 
-def export(st: Storage, out: Path, active_days: int = 3) -> dict:
+def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = None) -> dict:
     out.mkdir(parents=True, exist_ok=True)
     now = datetime.now(timezone.utc)
     since = (now - timedelta(days=active_days)).isoformat()
@@ -135,7 +138,9 @@ def export(st: Storage, out: Path, active_days: int = 3) -> dict:
     drops = []
     for k, h in history.items():
         x = by_key.get(k)
-        if x and len(h) >= 2 and x["in_stock"] and h[-1][1] == x["price"] and h[-2][1] > x["price"] \
+        if x and len(h) >= 2 and x["in_stock"] and not x["marketplace"] \
+                and not (x["net_content"] or "").startswith("≈") \
+                and h[-1][1] == x["price"] and h[-2][1] > x["price"] \
                 and h[-1][0] >= (now - timedelta(hours=48)).isoformat():
             drops.append({"k": k, "old": h[-2][1], "new": x["price"], "ts": h[-1][0],
                           "pct": round(100 * (1 - x["price"] / h[-2][1]), 1)})
@@ -194,7 +199,7 @@ def export(st: Storage, out: Path, active_days: int = 3) -> dict:
         "core": core, "compare": compare[:1500], "offers": [x["key"] for x in offers[:800]],
         "drops": drops[:300], "errors": [fdict(f) for f in fl["error"]],
         "godzilla": [fdict(f) for f in fl["godzilla"]], "gangas": [fdict(f) for f in fl["ganga"][:600]],
-        "hall": hof,
+        "hall": hof, **(extra or {}),
     }
     (out / "data.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     allp = [_compact(x, groups.get(x["key"])) for x in rows]

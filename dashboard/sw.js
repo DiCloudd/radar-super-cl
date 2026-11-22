@@ -1,5 +1,5 @@
 // Red primero (los datos cambian cada ventana); caché solo como respaldo sin conexión.
-const CACHE = "radar-v2";
+const CACHE = "radar-v3";
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch", e => {

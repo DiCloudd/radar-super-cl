@@ -58,6 +58,8 @@ main{padding:4px 16px calc(env(safe-area-inset-bottom) + 90px);max-width:760px;m
 .r .u{color:var(--mut);font-size:12px}
 .st{font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:6px;color:#fff;white-space:nowrap}
 .st.lider{background:var(--lider)}.st.santaisabel{background:var(--santaisabel)}.st.acuenta{background:var(--acuenta)}.st.unimarc{background:var(--unimarc)}.st.tottus{background:var(--tottus)}
+.st.jumbo{background:#00953b}.st.alvi{background:#003da5}.st{background:#5b6472}
+.why .tag{white-space:normal;display:inline-block;line-height:1.35}
 .tag{font-size:11.5px;padding:2px 7px;border-radius:6px;background:var(--chip);color:var(--mut);white-space:nowrap;font-weight:600}
 .tag.g2{background:var(--acc2);color:var(--acc)}.tag.r2{background:var(--warn2);color:var(--warn)}.tag.y2{background:var(--gold2);color:var(--gold)}
 .foot{display:flex;gap:6px;align-items:center;margin-top:8px;flex-wrap:wrap}
@@ -127,8 +129,82 @@ applyTheme();
 
 // ---------- datos ----------
 function index(list){ for (const p of list){ if (!BY[p.k] || !BY[p.k].h) BY[p.k] = p; if (p.g) (GM[p.g] = GM[p.g] || new Set()).add(p.k); } }
+// ---------- acceso por dispositivo (cifrado de extremo a extremo) ----------
+const ENC = new TextEncoder();
+const B32 = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const b64u = b => btoa(String.fromCharCode(...new Uint8Array(b))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+function idb(){ return new Promise((ok, ko) => { const r = indexedDB.open("radar-access", 1);
+  r.onupgradeneeded = () => r.result.createObjectStore("k"); r.onsuccess = () => ok(r.result); r.onerror = () => ko(r.error); }); }
+async function idbGet(k){ const db = await idb(); return new Promise(ok => { const r = db.transaction("k").objectStore("k").get(k); r.onsuccess = () => ok(r.result); r.onerror = () => ok(null); }); }
+async function idbPut(k, v){ const db = await idb(); return new Promise(ok => { const t = db.transaction("k", "readwrite"); t.objectStore("k").put(v, k); t.oncomplete = ok; t.onerror = ok; }); }
+function deviceDesc(){
+  const ua = navigator.userAgent;
+  const dev = /iPhone/.test(ua) ? "iPhone" : /iPad/.test(ua) ? "iPad" : /Android/.test(ua) ? "Android" : /Mac/.test(ua) ? "Mac" : /Windows/.test(ua) ? "Windows" : "Otro";
+  const br = /CriOS|Chrome/.test(ua) && !/Edg/.test(ua) ? "Chrome" : /Edg/.test(ua) ? "Edge" : /FxiOS|Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "Navegador";
+  const app = matchMedia("(display-mode: standalone)").matches || navigator.standalone ? " · app instalada" : "";
+  return `${dev} · ${br}${app}`;
+}
+let ME = null;
+async function myDevice(){
+  if (ME) return ME;
+  let k = await idbGet("dev");
+  if (!k){
+    const kp = await crypto.subtle.generateKey({name: "ECDH", namedCurve: "P-256"}, false, ["deriveBits"]);   // privada NO exportable
+    k = {priv: kp.privateKey, pub: new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey))};
+    await idbPut("dev", k);
+  }
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", k.pub));
+  let n = 0n; for (let i = 0; i < 5; i++) n = (n << 8n) | BigInt(h[i]);
+  let s = ""; for (let i = 0; i < 8; i++) s = B32[Number((n >> BigInt(5 * i)) & 31n)] + s;
+  ME = {...k, id: s.slice(0, 4) + "-" + s.slice(4), desc: deviceDesc()};
+  ME.request = `RADAR1.${b64u(ENC.encode(ME.desc))}.${b64u(k.pub)}`;
+  return ME;
+}
+let DKEY = null;
+async function dataKey(){
+  const me = await myDevice();
+  const keys = await (await fetch("keys.json?t=" + Date.now(), {cache: "no-store"})).json();
+  const w = keys.devices[me.id];
+  if (!w) return null;
+  const epk = await crypto.subtle.importKey("raw", unb64u(w.epk), {name: "ECDH", namedCurve: "P-256"}, false, []);
+  const shared = await crypto.subtle.deriveBits({name: "ECDH", public: epk}, me.priv, 256);
+  const base = await crypto.subtle.importKey("raw", shared, "HKDF", false, ["deriveKey"]);
+  const wk = await crypto.subtle.deriveKey({name: "HKDF", hash: "SHA-256", salt: ENC.encode("radar-super-salt-v1"), info: ENC.encode("radar-super-wrap-v1")},
+    base, {name: "AES-GCM", length: 256}, false, ["decrypt"]);
+  const raw = await crypto.subtle.decrypt({name: "AES-GCM", iv: unb64u(w.iv), additionalData: ENC.encode(me.id)}, wk, unb64u(w.ct));
+  return crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
+}
+async function openSealed(name){
+  const blob = new Uint8Array(await (await fetch(name.replace(".json", ".bin") + "?t=" + Date.now(), {cache: "no-store"})).arrayBuffer());
+  const gz = await crypto.subtle.decrypt({name: "AES-GCM", iv: blob.slice(0, 12), additionalData: ENC.encode(name)}, DKEY, blob.slice(12));
+  const stream = new Blob([gz]).stream().pipeThrough(new DecompressionStream("gzip"));
+  return JSON.parse(await new Response(stream).text());
+}
+async function lockScreen(){
+  const me = await myDevice();
+  document.querySelector("nav.tab").hidden = true;
+  $("#title").textContent = "🔒 Acceso restringido";
+  $("#upd").textContent = "Esta app es privada";
+  $("#main").innerHTML = `<div class="hint" style="color:var(--ink);border-style:solid">
+      Este dispositivo aún no está autorizado. Envía tu solicitud al administrador para que la apruebe.</div>
+    <div class="g" style="margin-top:12px;text-align:center"><div class="mut" style="font-size:13px">Código de este dispositivo</div>
+      <div style="font-size:34px;font-weight:800;letter-spacing:2px;margin:6px 0">${esc(me.id)}</div>
+      <div class="mut" style="font-size:13px">${esc(me.desc)}</div>
+      <p style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px">
+        <button class="btn" id="share">Enviar solicitud</button><button class="btn s" id="copy">Copiar</button><button class="btn s" id="retry">Reintentar</button></p></div>
+    <p class="mut" style="font-size:13px">Una vez aprobado, se activa en la próxima actualización de datos (máx. ~25 min).
+    Si instalas la app en la pantalla de inicio, tendrá un código distinto: apruébalo también.</p>`;
+  $("#copy").onclick = async () => { try { await navigator.clipboard.writeText(me.request); toast("Solicitud copiada"); } catch { prompt("Copia esta solicitud:", me.request); } };
+  $("#share").onclick = async () => { if (navigator.share) { try { await navigator.share({text: me.request}); } catch {} } else $("#copy").click(); };
+  $("#retry").onclick = () => location.reload();
+}
+
 async function load(){
-  D = await (await fetch("data.json?t=" + Date.now())).json();
+  try { DKEY = await dataKey(); } catch (e) { DKEY = null; }
+  if (!DKEY) return lockScreen();
+  document.querySelector("nav.tab").hidden = false;
+  D = await openSealed("data.json");
   index(D.core);
   const ago = Math.max(0, Math.round((Date.now() - new Date(D.generated)) / 60000));
   $("#upd").textContent = `Actualizado hace ${ago < 1 ? "menos de 1" : ago} min · ${D.counts.products.toLocaleString("es-CL")} productos · ${Object.keys(D.stores).length} cadenas`;
@@ -136,14 +212,15 @@ async function load(){
   badge(); render();
 }
 let allP = null;
-function loadAll(){ return allP || (allP = fetch("products.json?t=" + Date.now()).then(r => r.json()).then(j => { ALL = j.products; index(ALL); return ALL; })); }
+function loadAll(){ return allP || (allP = openSealed("products.json").then(j => { ALL = j.products; index(ALL); return ALL; })); }
 const price = p => (card && p.c && p.c < p.p) ? p.c : p.p;
 const SN = s => (D && D.health[s] && D.health[s].name) || s;
 const members = p => p.g && GM[p.g] ? [...GM[p.g]].map(k => BY[k]).filter(Boolean) : [p];
 
 // ---------- tarjeta de producto comparado ----------
 function groupCard(p, extra = ""){
-  const ms = members(p).filter(x => !x.mk);
+  let ms = members(p).filter(x => !x.mk);
+  if (!ms.length) ms = [p];   // solo vendedores externos: igual se muestra (antes rompía la lista)
   const byStore = {}; for (const x of ms) if (!byStore[x.s] || price(x) < price(byStore[x.s])) byStore[x.s] = x;
   const rows = Object.values(byStore).sort((a, b) => price(a) - price(b));
   const img = rows.find(x => x.img)?.img;
@@ -155,6 +232,8 @@ function groupCard(p, extra = ""){
     <div class="rows">${rows.map((x, i) => `<div class="r ${i === 0 && rows.length > 1 ? "best" : ""}" data-open="${esc(x.k)}">
       <span class="st ${x.s}">${esc(SN(x.s))}</span>
       ${x.u ? `<span class="u">${fmt(x.u)}/${esc(x.un)}</span>` : ""}
+      ${x.w ? `<span class="tag y2">≈${esc(x.w)} · peso variable</span>` : ""}
+      ${x.mk ? `<span class="tag">otro vendedor</span>` : ""}
       ${x.st === 0 ? `<span class="tag r2">agotado</span>` : ""}
       ${!card && x.c ? `<span class="tag">💳 ${fmt(x.c)}</span>` : ""}
       <span class="pz">${fmt(price(x))}${x.l ? `<s>${fmt(x.l)}</s>` : ""}</span></div>`).join("")}</div>
@@ -162,6 +241,8 @@ function groupCard(p, extra = ""){
       <button class="add ${inB ? "on" : ""}" data-add="${esc(rows[0].k)}">${inB ? "✓ En canasta" : "+ Canasta"}</button></div></div>`;
 }
 function dedupe(list){ const seen = new Set(), out = []; for (const p of list){ const id = p.g || p.k; if (!seen.has(id)){ seen.add(id); out.push(p); } } return out; }
+// una tarjeta por producto aunque varias cadenas tengan hallazgo en el mismo grupo
+function dedupeF(list){ const seen = new Set(), out = []; for (const f of list){ const p = BY[f.k]; if (!p) continue; const id = p.g || p.k; if (!seen.has(id)){ seen.add(id); out.push(f); } } return out; }
 function paged(el, list, makeCard, n = 30){
   let shown = n;
   const draw = () => { el.innerHTML = list.length ? `<div class="list">${list.slice(0, shown).map(makeCard).join("")}</div>`
@@ -238,12 +319,13 @@ function ofertas(){
     const list = [...D.errors.map(f => ({...f, kind: "💥 Posible error"})), ...D.godzilla.map(f => ({...f, kind: "🦖 Godzilla"}))];
     el.innerHTML = `<div class="hint">Reglas estrictas: el producto <b>bajó de verdad</b> frente a su propio historial y quedó muy por debajo del mismo producto en otras cadenas. Aun así revisa en la tienda antes de comprar: puede corregirse en minutos.</div><div id="el" style="margin-top:10px"></div>`;
     if (!list.length) $("#el").innerHTML = `<div class="empty">Sin errores de precio ahora mismo. 👀 El radar revisa cada ~2 minutos.</div>`;
-    else paged($("#el"), list.filter(f => BY[f.k]), f => groupCard(BY[f.k], why(`${f.kind} · ${f.why}`)));
+    else paged($("#el"), dedupeF(list), f => groupCard(BY[f.k], why(`${f.kind} · ${f.why}`)));
   } else if (sec === "gangas"){
-    paged(el, D.gangas.filter(f => BY[f.k]), f => groupCard(BY[f.k], why(`🔥 ${f.pct}% más barato que en otras cadenas`, "g2")));
+    paged(el, dedupeF(D.gangas), f => groupCard(BY[f.k], why(`🔥 ${f.pct}% más barato que en otras cadenas`, "g2")));
   } else if (sec === "bajadas"){
-    if (!D.drops.length) el.innerHTML = `<div class="empty">Aún sin bajadas en las últimas 48 h.</div>`;
-    else paged(el, D.drops.filter(d => BY[d.k]), d => groupCard(BY[d.k], why(`⚡ bajó ${d.pct}% desde ${fmt(d.old)}`, "y2")));
+    const ds = dedupeF(D.drops);
+    if (!ds.length) el.innerHTML = `<div class="empty">Aún sin bajadas en las últimas 48 h.</div>`;
+    else paged(el, ds, d => groupCard(BY[d.k], why(`⚡ bajó ${d.pct}% desde ${fmt(d.old)}`, "y2")));
   } else {
     el.innerHTML = `<div class="hint">Descuento que declara la tienda sobre su "precio normal" (a veces inflado). Para ahorro real mira 🔥 Gangas.</div><div id="dl" style="margin-top:10px"></div>`;
     paged($("#dl"), dedupe(D.offers.map(k => BY[k]).filter(Boolean)), p => groupCard(p, why(`-${Math.round(100 * (1 - p.p / p.l))}% vs normal ${fmt(p.l)}`, "g2")));
@@ -301,6 +383,9 @@ function mas(){
     ${Object.entries(h).map(([s, x]) => `<div class="row"><span class="st ${s}">${esc(x.name)}</span>
       <div style="font-size:14px;min-width:0">${x.products ? (x.blocked ? "⏸️ en pausa (" + esc(x.blocked.reason) + ")" : "✅ funcionando") : "⛔ no disponible"}
       <div class="mut" style="font-size:12.5px">${x.products ? x.products.toLocaleString("es-CL") + " productos · " + x.with_ean.toLocaleString("es-CL") + " con código de barras" : esc(x.note)}</div></div></div>`).join("")}
+    <div class="sec"><h2>🔐 Dispositivos</h2><span>este: ${esc(ME ? ME.id : "")}</span></div>
+    ${(D.devices || []).length ? `<table><tr><th>Código</th><th>Apodo / equipo</th><th>Estado</th></tr>${D.devices.map(d => `<tr><td><b>${esc(d.id)}</b>${ME && d.id === ME.id ? " (este)" : ""}</td><td>${esc(d.name || "—")}<div class="mut">${esc(d.desc)} · desde ${esc(d.added)}</div></td><td>${d.status === "ok" ? "✅ habilitado" : "⛔ bloqueado"}</td></tr>`).join("")}</table>` : ""}
+    <p><a class="btn s" href="https://github.com/DiCloudd/radar-super-cl/actions/workflows/dispositivos.yml" target="_blank" rel="noopener">Aprobar o bloquear (GitHub)</a></p>
     <div class="sec"><h2>🏆 Salón de la fama</h2><span>errores detectados</span></div>
     ${D.hall.length ? `<table><tr><th>Producto</th><th>Precio</th><th>Duró</th></tr>${D.hall.slice(0, 30).map(e => { const p = BY[e.k]; const dur = e.ended ? Math.round((new Date(e.ended) - new Date(e.detected)) / 60000) + " min · " + esc(e.end_reason) : "🟢 sigue"; return `<tr><td>${esc(p ? p.n : e.k)}</td><td>${fmt(e.price)}<div class="mut">ref ${fmt(e.reference)}</div></td><td>${dur}</td></tr>`; }).join("")}</table>` : `<div class="empty">Aún sin errores registrados.</div>`}
     <div class="sec"><h2>⬇️ Exportar a Excel</h2></div>

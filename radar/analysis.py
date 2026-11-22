@@ -26,6 +26,9 @@ GODZILLA_DROP = 0.40
 GODZILLA_MIN_PRICE = 5000
 GANGA_RATIO = 0.70
 MIN_PRICE = 300                # nada bajo $300 (ruido)
+ARTIFACT_RATIO = 0.15          # caer a <15% del precio anterior sin otra cadena que lo confirme
+                               # = casi siempre cambio de vendedor/pack, no error de etiqueta
+OWN_MIN_HELD_H = 12            # el precio anterior debió regir al menos 12 h
 
 
 @dataclass
@@ -40,7 +43,8 @@ class Finding:
 
 def _eligible(r: dict) -> bool:
     return (bool(r["in_stock"]) and not r["marketplace"] and r["price"] >= MIN_PRICE
-            and not is_small_format(r["name"]))
+            and not is_small_format(r["name"])
+            and not (r.get("net_content") or "").startswith("≈"))   # peso variable: excluido
 
 
 def analyze(rows: list[dict], groups: dict[str, str], history: dict[str, list[tuple[str, float]]],
@@ -76,14 +80,17 @@ def analyze(rows: list[dict], groups: dict[str, str], history: dict[str, list[tu
                                        f"{_pct(price, ref)}% bajo la mediana de {len(others)} cadena(s) "
                                        f"y bajó desde ${prev:,.0f}".replace(",", "."), _pct(price, ref)))
                     continue
-            elif prev >= ERROR_ONLY_OWN_MIN and price < ERROR_ONLY_OWN_RATIO * prev:
+            elif (prev >= ERROR_ONLY_OWN_MIN and ARTIFACT_RATIO * prev <= price < ERROR_ONLY_OWN_RATIO * prev
+                  and _held_hours(hist, prev) >= OWN_MIN_HELD_H):
                 out.append(Finding(r["key"], "error", price, prev,
                                    f"bajó {_pct(price, prev)}% desde ${prev:,.0f} (sin otras cadenas)".replace(",", "."),
                                    _pct(price, prev)))
                 continue
         # Godzilla: caída fuerte en 24 h sobre un precio alto
         p24 = prev
-        if p24 and p24 >= GODZILLA_MIN_PRICE and price <= (1 - GODZILLA_DROP) * p24 and \
+        if p24 and ref is None and price < ARTIFACT_RATIO * p24:
+            continue   # caída sospechosa de dato (vendedor/pack): ni error ni Godzilla
+        if p24 and p24 >= GODZILLA_MIN_PRICE and _held_hours(hist, p24) >= OWN_MIN_HELD_H and price <= (1 - GODZILLA_DROP) * p24 and \
                 _changed_since(hist, now - timedelta(hours=24)):
             if ref is None or price < ref:   # si en otras cadenas es aún más barato, no es noticia
                 out.append(Finding(r["key"], "godzilla", price, p24,
@@ -105,6 +112,17 @@ def _previous_price(hist: list[tuple[str, float]], current: float) -> float | No
         if p and p != current:
             return p
     return None
+
+
+def _held_hours(hist: list[tuple[str, float]], price: float) -> float:
+    """Horas que rigió `price` (desde que apareció hasta el cambio siguiente)."""
+    for i in range(len(hist) - 1, 0, -1):
+        if hist[i - 1][1] == price:
+            j = i - 1
+            while j > 0 and hist[j - 1][1] == price:
+                j -= 1
+            return (_dt(hist[i][0]) - _dt(hist[j][0])).total_seconds() / 3600
+    return 0.0
 
 
 def _changed_since(hist: list[tuple[str, float]], since: datetime) -> bool:

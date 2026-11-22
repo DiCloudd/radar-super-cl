@@ -120,6 +120,13 @@ class LiderScraper(Scraper):
             up = parse_unit(pi.get("unitPrice"))
             if up and (up[1] == "un" or up[0] < 50):
                 up = None
+        net = None
+        if pi.get("finalCostByWeight") or (it.get("salesUnitType") or "").upper() == "WEIGHT":
+            # "Costo final por peso": precio estimado por peso promedio -> peso variable
+            pk = parse_unit(pi.get("unitPrice"))
+            up = (pk[0], "kg") if pk and pk[1] == "kg" else up
+            c = parse_content(it.get("name"))
+            net = f"≈{c.amount / 1000:g} kg" if c and c.base == "g" else "≈ peso variable"
         ean = ean_from_item_id(it.get("usItemId"))
         img = (it.get("imageInfo") or {}).get("thumbnailUrl")
         status = ((it.get("availabilityStatusV2") or {}).get("value") or "IN_STOCK").upper()
@@ -128,7 +135,7 @@ class LiderScraper(Scraper):
         return Product(
             store=self.store, sku=str(it.get("usItemId") or it.get("id")), name=it.get("name", ""),
             price=price, list_price=was if was and was > price else None, card_price=card_price,
-            unit_price=up[0] if up else None, unit=up[1] if up else None,
+            unit_price=up[0] if up else None, unit=up[1] if up else None, net_content=net,
             ean=ean, brand=it.get("brand"), image=img, url=url, category=source.category,
             in_stock=status == "IN_STOCK", marketplace=(it.get("sellerType") or "INTERNAL") != "INTERNAL",
             promos=promos,

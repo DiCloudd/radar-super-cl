@@ -179,3 +179,16 @@ def test_unimarc_club_price_is_separate(unimarc):
     assert p.list_price is None
     assert p.unit == "kg" and p.unit_price == 24000
     assert p.net_content == "15 g"
+
+
+def test_acuenta_weighted_products_use_final_price():
+    # Regresión (captura real): Acuenta muestra "$3.390 por KG" y cobra $7.797 (2,3 kg)
+    s = src("acuenta", "https://www.acuenta.cl/ca/carnes-y-pescados/03?sort=2", "carnes")
+    res = SCRAPERS["acuenta"].parse_listing(load("acuenta_carnes.html.gz"), s)
+    p = next(x for x in res.products if x.name == "Pollo Trutro Entero Envasado 900 g Ariztia")
+    assert p.unit_price == 3490 and p.unit == "kg"
+    assert p.price == round(3490 * 0.9)
+    assert p.net_content == "≈0.9 kg"
+    assert p.ean == "7804115002446"            # el EAN real primero, el interno (2...) después
+    q = next(x for x in res.products if x.name == "Pollo Trutro Largo Congelado 800 g Seara")
+    assert q.price == 3390 and not (q.net_content or "").startswith("≈")   # por unidad: sin cambios
