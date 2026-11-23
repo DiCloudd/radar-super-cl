@@ -25,7 +25,14 @@ _PACK_WORDS = re.compile(r"\b(pack|six|display|caja|unidades|unidad|und|un|uds|x
                          r"desechable|retornable|de|con)\b")
 _MEASURE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:ml|cc|l|lt|lts|g|gr|grs|kg|un|und|unidades|x)?\b")
 _DEGREES = re.compile(r"\d+(?:[.,]\d+)?\s*°")
-_ANY_PACK = re.compile(r"\b(pack|paquetes?|six|display|multipack|bipack|tripack)\b|\b\d+\s*x\s*\d")
+_ANY_PACK = re.compile(r"\b(pack|paquetes?|six|display|multipack|bipack|tripack|caja)\b|\b\d+\s*x\s*\d|"
+                       r"\b\d+\s*(?:un|und|unid|unidades|latas|botellas)\b")
+# productos que se venden por CONTEO (64 toallitas, 30 pañales): "pack 64 un" no es un multipack
+_COUNTABLE = re.compile(r"\b(toallitas?|toallas|panales?|servilletas?|panuelos?|bolsas?|tabletas?|sobres?|"
+                        r"capsulas?|discos?|pastillas?|comprimidos?|rollos?|hojas?|cotones?|apositos?|filtros?)\b")
+_SIZE = re.compile(r"(\d+(?:[.,]\d+)?)\s*(ml|cc|l|lt|lts|litros?|g|gr|grs|kg)\b")
+_TO_BASE = {"ml": 1, "cc": 1, "l": 1000, "lt": 1000, "lts": 1000, "litro": 1000, "litros": 1000,
+            "g": 1, "gr": 1, "grs": 1, "kg": 1000}
 
 
 @dataclass
@@ -47,17 +54,25 @@ def base_name(name: str, brand: str | None) -> str:
     return " ".join(words)
 
 
+def item_size(name: str) -> float | None:
+    """Tamaño de CADA unidad (ml o g) según el nombre: "Pack 6 un. Néctar 200 ml" -> 200."""
+    ms = list(_SIZE.finditer(norm(name).replace(" 5 l ", " 5 l ")))
+    if not ms:
+        return None
+    m = ms[-1]
+    return float(m.group(1).replace(",", ".")) * _TO_BASE[m.group(2)]
+
+
 def pack_size(r: dict) -> tuple[int, float | None]:
     """(N unidades del pack, contenido por unidad en g/ml o None)."""
-    c = parse_content(r.get("net_content")) if r.get("net_content") else None
-    c = c or parse_content(r["name"])
     # SOLO packs explícitos ("Pack 6", "6 x 350 cc", "6 latas"). "200 un" de servilletas o "500 cc"
     # son UN producto, no un pack (falso positivo detectado al calibrar).
     m = re.search(r"\b(?:pack|six\s*pack)\s*(?:de\s*)?(\d{1,2})\b|\b(\d{1,2})\s*x\s*\d|"
                   r"\b(\d{1,2})\s*(?:latas|botellas|unidades de)\b", norm(r["name"]))
     n = int(next(g for g in m.groups() if g)) if m else 1
-    per = (c.amount / max(c.pack, 1)) if c and c.base in ("g", "ml") else None
-    return max(n, 1), per
+    if n > 1 and (n > 24 or _COUNTABLE.search(norm(r["name"]))):
+        n = 1        # 64 toallitas / 30 pañales: es un conteo, no un multipack
+    return max(n, 1), item_size(r["name"])
 
 
 def find_absurd(rows: list[dict]) -> list[Absurd]:
@@ -71,8 +86,10 @@ def find_absurd(rows: list[dict]) -> list[Absurd]:
         if not b or len(bn.split()) < 1:
             continue
         n, per = pack_size(r)
-        if n == 1 and _ANY_PACK.search(norm(r["name"])):
-            continue    # "pack familiar 18 paquetes" no es una unidad suelta (falso positivo calibrado)
+        if n == 1 and (_ANY_PACK.search(norm(r["name"])) or _COUNTABLE.search(norm(r["name"]))):
+            continue    # "Caja 24 un.", "Lata 6 Un", "pack familiar": no son una unidad suelta
+        if n == 1 and per is None:
+            continue    # sin tamaño declarado no se puede asegurar que sea UNA unidad comparable
         if n == 1:
             singles[(b, bn)].append((r, per))
         elif n >= MIN_PACK:
@@ -80,7 +97,7 @@ def find_absurd(rows: list[dict]) -> list[Absurd]:
     out = []
     for r, b, bn, n, per in packs:
         cands = [(s, sp) for s, sp in singles.get((b, bn), [])
-                 if per is None or sp is None or abs(sp - per) <= 0.15 * max(sp, per)]
+                 if per is None or abs(sp - per) <= 0.15 * max(sp, per)]
         if not cands:
             continue
         same = [s for s, _ in cands if s["store"] == r["store"]]

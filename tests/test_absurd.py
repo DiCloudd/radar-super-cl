@@ -39,3 +39,18 @@ def test_different_brand_or_size_not_compared():
                         r("l:s1", "Cerveza Lager Lata 350 ml", 990, brand="Heineken")]) == []
     assert find_absurd([r("l:p6", "Cerveza Lager Pack 6 latas 350 ml", 2000, brand="Cristal"),
                         r("l:s1", "Cerveza Lager botella 1 L", 2990, brand="Cristal")]) == []
+
+
+def test_real_audit_pairs_only_the_true_case_flagged():
+    """60 parejas REALES que la primera versión marcó (auditoría en la nube). Solo la cerveza
+    Berries (6 latas a $1.090 vs 1 lata a $990) es un caso genuino."""
+    import json
+    from pathlib import Path
+    pairs = json.loads((Path(__file__).parent / "fixtures" / "audit_pack_pairs.json").read_text(encoding="utf-8"))
+    flagged = []
+    for i, (s1, n1, p1, s2, n2, p2) in enumerate(pairs):
+        brand = "Stones" if "Berries" in n1 else "Marca"
+        res = find_absurd([r(f"{s1}:p{i}", n1, p1, brand=brand, store=s1),
+                           r(f"{s2}:s{i}", n2, p2, brand=brand, store=s2)])
+        flagged += [n1 for _ in res]
+    assert flagged == ["Cerveza Berries 2.5° Pack 6 Un Lata"]
