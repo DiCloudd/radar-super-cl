@@ -103,6 +103,8 @@ class Telegram:
         if not chat:
             return 0
         sent = 0
+        # avisos de reglas en prueba: se descartan sin enviar
+        self.st.db.execute("UPDATE alerts SET sent=2 WHERE sent=0 AND kind IN ('pack')")
         rows = self.st.db.execute("SELECT id, kind, payload FROM alerts WHERE sent=0 ORDER BY id LIMIT ?",
                                   (limit,)).fetchall()
         for r in rows:

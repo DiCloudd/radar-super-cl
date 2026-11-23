@@ -136,8 +136,12 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
     # 📦 pack a precio de unidad (ej. 6 cervezas a $1.090): con stock -> error con aviso; agotado -> vigilancia
     from .absurd import find_absurd
     absurd = find_absurd(rows)
-    findings += [Finding(a.key, "pack", a.price, a.single_price, a.basis, a.pct)
-                 for a in absurd if by_key[a.key]["in_stock"]]
+    for a in absurd[:60]:   # muestra para auditar la regla (datos públicos de productos)
+        x, s = by_key[a.key], by_key.get(a.single_key, {})
+        print(f"AUDIT-PACK {x['store']} | {x['name'][:60]} ${round(x['price'])} | suelta: {s.get('store')} "
+              f"{(s.get('name') or '')[:50]} ${round(s.get('price') or 0)}")
+    # EN PRUEBA: con datos reales marcó 114 (vs 0 en la calibración local). Hasta auditarla NO genera
+    # avisos ni entra al salón de la fama; solo se muestra en la app como "a revisar".
     _record_errors(st, findings, by_key)
 
     # comparables ordenados por ahorro
