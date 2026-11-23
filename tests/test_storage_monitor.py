@@ -173,3 +173,25 @@ def test_tottus_sources_need_partner_token(monkeypatch):
     assert not [s for s in load_sources(runner="cloud") if s.store == "tottus"]
     monkeypatch.setenv("TOTTUS_PARTNER_TOKEN", "x")
     assert len([s for s in load_sources(runner="cloud") if s.store == "tottus"]) == 15
+
+
+def test_encrypted_db_is_binary_and_reads_old_text_format(tmp_path, monkeypatch):
+    # Regresión: el cifrado en texto base64 disparó el escáner de secretos de GitHub (falso "token")
+    from cryptography.fernet import Fernet
+    from radar import backup
+    key = Fernet.generate_key()
+    monkeypatch.setenv("DB_KEY", key.decode())
+    src = tmp_path / "radar.db"
+    src.write_bytes(b"datos de prueba" * 100)
+    enc = tmp_path / "radar.db.enc"
+    backup.encrypt(src, enc)
+    raw = enc.read_bytes()
+    assert raw[0] == 0x80 and not raw.startswith(b"gAAAAA")          # binario, no texto base64
+    out = tmp_path / "out.db"
+    backup.decrypt(enc, out)
+    assert out.read_bytes() == src.read_bytes()
+    import gzip
+    old = tmp_path / "old.enc"
+    old.write_bytes(Fernet(key).encrypt(gzip.compress(src.read_bytes())))   # formato antiguo (texto)
+    backup.decrypt(old, out)
+    assert out.read_bytes() == src.read_bytes()

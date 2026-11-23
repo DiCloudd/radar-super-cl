@@ -71,12 +71,14 @@ def _fernet() -> Fernet:
 def load_devices(path: Path = DEVICES_FILE) -> list[dict]:
     if not path.exists():
         return []
-    return json.loads(_fernet().decrypt(path.read_bytes()))["devices"]
+    from .backup import open_bytes   # binario (o texto antiguo)
+    return json.loads(open_bytes(path.read_bytes()))["devices"]
 
 
 def save_devices(devices: list[dict], path: Path = DEVICES_FILE) -> None:
+    from .backup import seal_bytes   # binario: el escáner de secretos no lo confunde con tokens
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(_fernet().encrypt(json.dumps({"devices": devices}, ensure_ascii=False).encode()))
+    path.write_bytes(seal_bytes(json.dumps({"devices": devices}, ensure_ascii=False).encode()))
 
 
 def apply_action(devices: list[dict], action: str, code: str, name: str = "") -> tuple[list[dict], str]:

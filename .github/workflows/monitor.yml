@@ -91,7 +91,7 @@ jobs:
           ls -la /tmp/site/db
 
       - name: Encadenar siguiente ventana
-        if: success() && env.CHAIN == 'true'
+        if: ${{ !cancelled() && env.CHAIN == 'true' }}   # sigue aunque la ventana falle
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run monitor.yml -R "${{ github.repository }}" -f minutes="$WINDOW_MIN" -f chain=true
