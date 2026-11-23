@@ -103,8 +103,8 @@ class Telegram:
         if not chat:
             return 0
         sent = 0
-        # avisos de reglas en prueba: se descartan sin enviar
-        self.st.db.execute("UPDATE alerts SET sent=2 WHERE sent=0 AND kind IN ('pack')")
+        # los avisos 'pack' encolados ANTES de la auditoría (regla sin calibrar) se descartan
+        self.st.db.execute("UPDATE alerts SET sent=2 WHERE sent=0 AND kind='pack' AND ts < '2026-11-23T01:30'")
         rows = self.st.db.execute("SELECT id, kind, payload FROM alerts WHERE sent=0 ORDER BY id LIMIT ?",
                                   (limit,)).fetchall()
         for r in rows:

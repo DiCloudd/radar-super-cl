@@ -25,7 +25,8 @@ _PACK_WORDS = re.compile(r"\b(pack|six|display|caja|unidades|unidad|und|un|uds|x
                          r"desechable|retornable|de|con)\b")
 _MEASURE = re.compile(r"\b\d+(?:[.,]\d+)?\s*(?:ml|cc|l|lt|lts|g|gr|grs|kg|un|und|unidades|x)?\b")
 _DEGREES = re.compile(r"\d+(?:[.,]\d+)?\s*°")
-_ANY_PACK = re.compile(r"\b(pack|paquetes?|six|display|multipack|bipack|tripack|caja)\b|\b\d+\s*x\s*\d|"
+_ANY_PACK = re.compile(r"\b(pack|paquetes?|six|display|multipack|bipack|tripack|caja|latas|botellas|unidades)\b|"
+                       r"\b\d+\s*x\s*\d|"
                        r"\b\d+\s*(?:un|und|unid|unidades|latas|botellas)\b")
 # productos que se venden por CONTEO (64 toallitas, 30 pañales): "pack 64 un" no es un multipack
 _COUNTABLE = re.compile(r"\b(toallitas?|toallas|panales?|servilletas?|panuelos?|bolsas?|tabletas?|sobres?|"
@@ -102,6 +103,11 @@ def find_absurd(rows: list[dict]) -> list[Absurd]:
             continue
         same = [s for s, _ in cands if s["store"] == r["store"]]
         ref = min(same or [s for s, _ in cands], key=lambda s: s["price"])
+        # si el pack declara tamaño y coincide con el de la "suelta", puede ser el TOTAL del pack
+        # ("Hamburguesa Pack 10 Un 900 g" vs "Hamburguesa 900 g"): entonces debe ser barato incluso
+        # comparado 1 a 1 con la suelta para contar como error.
+        if per is not None and r["price"] >= 0.6 * ref["price"]:
+            continue
         if r["price"] < PACK_RATIO * n * ref["price"]:
             pct = round(100 * (1 - r["price"] / (n * ref["price"])), 1)
             basis = (f"pack de {n} a ${round(r['price']):,} y 1 unidad suelta vale ${round(ref['price']):,}"
