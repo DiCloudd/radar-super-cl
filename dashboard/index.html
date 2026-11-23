@@ -209,7 +209,7 @@ async function load(){
   index(D.core); WATCHED = new Set((D.watch || []).map(w => w.k));
   const ago = Math.max(0, Math.round((Date.now() - new Date(D.generated)) / 60000));
   $("#upd").textContent = `Actualizado hace ${ago < 1 ? "menos de 1" : ago} min · ${D.counts.products.toLocaleString("es-CL")} productos · ${Object.keys(D.stores).length} cadenas`;
-  const ne = D.errors.length + D.godzilla.length; if (ne) { $("#nerr").textContent = ne; $("#nerr").hidden = false; }
+  const ne = D.errors.length + D.godzilla.length + (D.absurd || []).length; if (ne) { $("#nerr").textContent = ne; $("#nerr").hidden = false; }
   badge(); render();
 }
 let allP = null;
@@ -310,7 +310,7 @@ async function run(){
 function ofertas(){
   const sec = LS.get("osec", D.errors.length ? "errores" : "gangas");
   const C = D.counts;
-  const tabs = [["errores", "💥 Errores", D.errors.length + D.godzilla.length], ["gangas", "🔥 Gangas", D.gangas.length],
+  const tabs = [["errores", "💥 Errores", D.errors.length + D.godzilla.length + (D.absurd || []).length], ["gangas", "🔥 Gangas", D.gangas.length],
     ["vigilando", "🚨 Vigilando", (D.watch || []).length],
     ["bajadas", "⚡ Bajaron", D.drops.length], ["descuentos", "🏷️ Descuentos", D.offers.length]];
   $("#main").innerHTML = `<div class="chips">${tabs.map(([k, t, n]) => `<button class="chip ${sec === k ? "on" : ""}" data-sec="${k}">${t} <small>${n}</small></button>`).join("")}</div><div id="ol"></div>`;
@@ -318,8 +318,9 @@ function ofertas(){
   const el = $("#ol");
   const why = (t, cls = "r2") => `<div class="why"><span class="tag ${cls}">${esc(t)}</span></div>`;
   if (sec === "errores"){
-    const list = [...D.errors.map(f => ({...f, kind: "💥 Posible error"})), ...D.godzilla.map(f => ({...f, kind: "🦖 Godzilla"}))];
-    el.innerHTML = `<div class="hint">Reglas estrictas: el producto <b>bajó de verdad</b> frente a su propio historial y quedó muy por debajo del mismo producto en otras cadenas. Aun así revisa en la tienda antes de comprar: puede corregirse en minutos.</div><div id="el" style="margin-top:10px"></div>`;
+    const list = [...(D.absurd || []).map(f => ({...f, kind: "📦 Pack a precio de unidad"})),
+      ...D.errors.map(f => ({...f, kind: "💥 Posible error"})), ...D.godzilla.map(f => ({...f, kind: "🦖 Godzilla"}))];
+    el.innerHTML = `<div class="hint">Reglas estrictas: el producto <b>bajó de verdad</b> frente a su propio historial y quedó muy por debajo del mismo producto en otras cadenas, o es un <b>pack que cuesta casi lo mismo que 1 unidad</b> del mismo producto. Aun así revisa en la tienda antes de comprar: puede corregirse en minutos.</div><div id="el" style="margin-top:10px"></div>`;
     if (!list.length) $("#el").innerHTML = `<div class="empty">Sin errores de precio ahora mismo. 👀 El radar revisa cada ~2 minutos.</div>`;
     else paged($("#el"), dedupeF(list), f => groupCard(BY[f.k], why(`${f.kind} · ${f.why}`)));
   } else if (sec === "gangas"){

@@ -13,7 +13,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from .analysis import analyze
+from .analysis import Finding, analyze
 from .matcher import group_products
 from .models import now_iso
 from .storage import Storage
@@ -91,7 +91,7 @@ def _tg_status(st: Storage) -> dict:
 def _record_errors(st: Storage, findings, by_key) -> None:
     """Tabla errors (🏆 salón de la fama): abre los nuevos, cierra los que desaparecieron."""
     now = now_iso()
-    current = {f.key: f for f in findings if f.kind in ("error", "godzilla")}
+    current = {f.key: f for f in findings if f.kind in ("error", "godzilla", "pack")}
     open_rows = {r["product_key"]: r for r in st.db.execute("SELECT * FROM errors WHERE ended IS NULL")}
     for k, f in current.items():
         if k not in open_rows:
@@ -133,6 +133,11 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
 
     history = _history(st, (now - timedelta(days=30)).isoformat())
     findings = analyze(rows, groups, history, now)
+    # 📦 pack a precio de unidad (ej. 6 cervezas a $1.090): con stock -> error con aviso; agotado -> vigilancia
+    from .absurd import find_absurd
+    absurd = find_absurd(rows)
+    findings += [Finding(a.key, "pack", a.price, a.single_price, a.basis, a.pct)
+                 for a in absurd if by_key[a.key]["in_stock"]]
     _record_errors(st, findings, by_key)
 
     # comparables ordenados por ahorro
@@ -169,7 +174,9 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
     fl = {kind: sorted([f for f in findings if f.kind == kind], key=lambda f: -f.pct)
           for kind in ("error", "godzilla", "ganga")}
     from . import watch as watchmod
-    flagged = {f.key: {"error": "💥 error", "godzilla": "🦖 Godzilla", "ganga": "🔥 ganga"}[f.kind] for f in findings}
+    flagged = {f.key: {"error": "💥 error", "godzilla": "🦖 Godzilla", "ganga": "🔥 ganga", "pack": "📦 pack a precio de unidad"}[f.kind]
+               for f in findings}
+    flagged.update({a.key: "📦 pack a precio de unidad" for a in absurd})
     flagged.update({d["k"]: f"⚡ bajó {d['pct']}%" for d in drops if d["k"] not in flagged})
     # las bajadas solo se calculan con stock; para vigilar, también las que quedaron agotadas tras bajar
     for k, h in history.items():
@@ -182,7 +189,7 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         "ORDER BY id DESC LIMIT 100")]
 
     core_keys, seen = [], set()
-    for k in (list(watchlist) + [f.key for f in fl["error"]] + [f.key for f in fl["godzilla"]] + [h["k"] for h in hof]
+    for k in (list(watchlist) + [a.key for a in absurd] + [a.single_key for a in absurd] + [f.key for f in fl["error"]] + [f.key for f in fl["godzilla"]] + [h["k"] for h in hof]
               + [d["k"] for d in drops[:300]] + [f.key for f in fl["ganga"][:600]]
               + [k for c in compare[:600] for k in c["keys"]] + [x["key"] for x in offers[:800]]):
         if k not in seen and k in by_key:
@@ -223,10 +230,12 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         "generated": now_iso(), "health": health, "runs": runs,
         "stores": {s: n for s, n in STORE_NAMES.items() if health[s]["products"]},
         "counts": {"products": len(rows), "compare": len(compare), "offers": len(offers), "drops": len(drops),
-                   "errors": len(fl["error"]), "godzilla": len(fl["godzilla"]), "gangas": len(fl["ganga"]),
+                   "errors": len(fl["error"]), "absurd": len(absurd), "godzilla": len(fl["godzilla"]), "gangas": len(fl["ganga"]),
                    "by_name": sum(1 for c in compare if c["m"] == "nombre")},
         "core": core, "compare": compare[:1500], "offers": [x["key"] for x in offers[:800]],
         "drops": drops[:300], "errors": [fdict(f) for f in fl["error"]],
+        "absurd": [{"k": a.key, "price": a.price, "ref": a.single_price, "why": a.basis, "pct": a.pct,
+                    "single": a.single_key} for a in absurd],
         "godzilla": [fdict(f) for f in fl["godzilla"]], "gangas": [fdict(f) for f in fl["ganga"][:600]],
         "hall": hof, **(extra or {}),
         "watch": [{"k": k, "price": w["price"], "reason": w.get("reason"), "since": w["since"][:16],

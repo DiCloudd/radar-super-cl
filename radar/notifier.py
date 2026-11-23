@@ -43,8 +43,9 @@ def render(kind: str, p: dict) -> str:
         return (f"🚨 <b>¡Volvió el stock!</b>\n{esc(p['name'])}\n<b>{fmt(p['price'])}</b> en {store}"
                 f" (vigilado a {fmt(p['was_price'])}{' · ' + esc(p['reason']) if p.get('reason') else ''})\n"
                 f"<a href=\"{esc(p['url'])}\">Ver en {store}</a>")
-    if kind in ("error", "godzilla"):
-        icon = "💥 <b>Posible error de precio</b>" if kind == "error" else "🦖 <b>Godzilla</b>"
+    if kind in ("error", "godzilla", "pack"):
+        icon = {"error": "💥 <b>Posible error de precio</b>", "godzilla": "🦖 <b>Godzilla</b>",
+                "pack": "📦 <b>Pack a precio de unidad</b>"}[kind]
         return (f"{icon}\n{esc(p['name'])}\n<b>{fmt(p['price'])}</b> en {store} · {esc(p.get('why', ''))}\n"
                 f"<i>Revisa en la tienda antes de comprar: puede corregirse en minutos.</i>\n"
                 f"<a href=\"{esc(p['url'])}\">Ver en {store}</a>")
