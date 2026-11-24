@@ -106,6 +106,7 @@ th{color:var(--mut);font-weight:600}
   <button data-t="buscar"><i>🔎</i>Buscar</button>
   <button data-t="ofertas"><i class="badge">🔥<b id="nerr" hidden></b></i>Ofertas</button>
   <button data-t="canasta"><i class="badge">🛒<b id="nbas" hidden></b></i>Canasta</button>
+  <button data-t="cadenas"><i>🏪</i>Cadenas</button>
   <button data-t="mas"><i>⋯</i>Más</button>
 </nav>
 <dialog id="dlg"><div class="dlg" id="dlgb"></div></dialog>
@@ -122,7 +123,7 @@ const LS = {
   set(k, v){ try{ localStorage.setItem("radar:" + k, JSON.stringify(v)); }catch{} }
 };
 let D = null, ALL = null, BY = {}, GM = {}, tab = LS.get("tab2", "buscar"), card = LS.get("card", false);
-const TITLES = {buscar: "Buscar", ofertas: "Ofertas", canasta: "Mi canasta", mas: "Más"};
+const TITLES = {buscar: "Buscar", ofertas: "Ofertas", canasta: "Mi canasta", cadenas: "Más barato en…", mas: "Más"};
 
 function applyTheme(){ const t = LS.get("theme", null); if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme; }
 applyTheme();
@@ -382,6 +383,47 @@ async function canasta(){
   $("#clr").onclick = e => { e.preventDefault(); if (confirm("¿Vaciar la canasta?")) { setBasket([]); canasta(); } };
 }
 
+// ---------- 🏪 MÁS BARATO EN… (por cadena) ----------
+let WIN = null;   // caché: grupos donde cada cadena es la más barata
+function computeWins(){
+  const wins = {};
+  for (const [g, set] of Object.entries(GM)){
+    const best = {};
+    for (const k of set){ const x = BY[k]; if (!x || x.mk || x.st === 0) continue;
+      if (!best[x.s] || price(x) < price(best[x.s])) best[x.s] = x; }
+    const rows = Object.values(best).sort((a, b) => price(a) - price(b));
+    if (rows.length < 2 || price(rows[0]) >= price(rows[1])) continue;   // sin empate: estrictamente más barata
+    const w = rows[0], next = rows[1], top = rows[rows.length - 1];
+    (wins[w.s] = wins[w.s] || []).push({p: w, next, save: price(next) - price(w),
+      pct: Math.round(100 * (1 - price(w) / price(next))), max: price(top) - price(w), n: rows.length});
+  }
+  return wins;
+}
+async function cadenas(){
+  const stores = Object.keys(D.stores);
+  let st = LS.get("cstore", stores[0]); if (!stores.includes(st)) st = stores[0];
+  const sort = LS.get("csort", "save"), cat = LS.get("ccat", "");
+  $("#main").innerHTML = `<div class="chips">${stores.map(s => `<button class="chip ${s === st ? "on" : ""}" data-cs="${s}">${esc(SN(s))}</button>`).join("")}</div>
+    <div id="cc"><div class="empty">Cargando catálogo completo…</div></div>`;
+  document.querySelectorAll("[data-cs]").forEach(b => b.onclick = () => { LS.set("cstore", b.dataset.cs); LS.set("ccat", ""); cadenas(); });
+  await loadAll();
+  if (tab !== "cadenas") return;
+  if (!WIN || WIN.card !== card){ WIN = computeWins(); WIN.card = card; }
+  const all = WIN[st] || [];
+  const cats = [...new Set(all.map(w => w.p.cat).filter(Boolean))].sort();
+  let list = cat ? all.filter(w => w.p.cat === cat) : all.slice();
+  const keyf = {save: w => -w.save, pct: w => -w.pct, price: w => price(w.p)}[sort];
+  list.sort((a, b) => keyf(a) - keyf(b));
+  const total = all.reduce((a, w) => a + w.save, 0);
+  $("#cc").innerHTML = `<div class="hint" style="color:var(--ink);border-style:solid">En <b>${esc(SN(st))}</b> hay <b>${all.length.toLocaleString("es-CL")}</b> productos más baratos que en cualquier otra cadena (mismo producto, con stock).</div>
+    <div class="chips"><button class="chip" id="csort">${{save: "↕ Mayor ahorro $", pct: "↕ Mayor ahorro %", price: "↕ Menor precio"}[sort]}</button>
+      <button class="chip ${cat ? "" : "on"}" data-cc="">Todas</button>${cats.map(c => `<button class="chip ${c === cat ? "on" : ""}" data-cc="${esc(c)}">${esc(c)}</button>`).join("")}</div>
+    <div id="cl"></div>`;
+  $("#csort").onclick = () => { const o = ["save", "pct", "price"]; LS.set("csort", o[(o.indexOf(sort) + 1) % o.length]); cadenas(); };
+  document.querySelectorAll("[data-cc]").forEach(b => b.onclick = () => { LS.set("ccat", b.dataset.cc); cadenas(); });
+  paged($("#cl"), list, w => groupCard(w.p, `<div class="why"><span class="tag g2">ahorras ${fmt(w.save)} (${w.pct}%) vs ${esc(SN(w.next.s))}${w.n > 2 ? ` · hasta ${fmt(w.max)}` : ""}</span></div>`));
+}
+
 // ---------- ⋯ MÁS ----------
 function mas(){
   const h = D.health;
@@ -446,7 +488,7 @@ function render(){
   if (!D) return;
   $("#title").textContent = TITLES[tab];
   document.querySelectorAll("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === tab));
-  ({buscar, ofertas, canasta, mas}[tab] || buscar)();
+  ({buscar, ofertas, canasta, cadenas, mas}[tab] || buscar)();
 }
 document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => { tab = b.dataset.t; LS.set("tab2", tab); render(); window.scrollTo(0, 0); });
 function toast(t){ const d = document.createElement("div"); d.textContent = t;
