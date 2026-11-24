@@ -178,6 +178,12 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
 
     fl = {kind: sorted([f for f in findings if f.kind == kind], key=lambda f: -f.pct)
           for kind in ("error", "godzilla", "ganga")}
+    # auditoría (datos públicos de productos): ¿bajadas/Godzilla reales o error de lectura?
+    from collections import Counter
+    print("AUDIT-DROPS por cadena:", dict(Counter(by_key[d["k"]]["store"] for d in drops)))
+    for f in fl["godzilla"][:15]:
+        x = by_key[f.key]
+        print(f"AUDIT-GODZILLA {x['store']} | {x['name'][:60]} | ${round(f.reference)} -> ${round(f.price)} | {x['url']}")
     from . import watch as watchmod
     flagged = {f.key: {"error": "💥 error", "godzilla": "🦖 Godzilla", "ganga": "🔥 ganga", "pack": "📦 pack a precio de unidad"}[f.kind]
                for f in findings}
