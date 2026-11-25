@@ -325,7 +325,8 @@ class Monitor:
         deadline = time.monotonic() + minutes * 60
         run_id = self.st.start_run(self.runner)
         stores = sorted({s.store for s in self.sources})
-        for s in stores:
+        # todas las cadenas con local configurado (también las que llegan desde el nodo de Chile)
+        for s in sorted(set(stores) | set(config.LOCATIONS)):
             loc = config.LOCATIONS.get(s, {})
             if loc and self.st.get_meta(f"location:{s}") != loc["id"]:
                 self.st.set_meta(f"location:{s}", loc["id"])
