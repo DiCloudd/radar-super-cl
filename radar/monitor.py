@@ -282,7 +282,8 @@ class Monitor:
                 done[st_] = done.get(st_, 0) + 1
                 await self.fast_idle.wait()
                 try:
-                    r = await self.fetchers.get(st_, self.fetcher).get(w["url"], referer=SCRAPERS[st_].base_url + "/")
+                    r = await self.fetchers.get(st_, self.fetcher).get(w["url"], referer=SCRAPERS[st_].base_url + "/",
+                                                                       cookies=SCRAPERS[st_].cookies)   # stock del local elegido
                     self.stats.requests += 1
                 except BlockedError as e:
                     self.mark_blocked(st_, e.reason)
@@ -324,6 +325,15 @@ class Monitor:
         deadline = time.monotonic() + minutes * 60
         run_id = self.st.start_run(self.runner)
         stores = sorted({s.store for s in self.sources})
+        for s in stores:
+            loc = config.LOCATIONS.get(s, {})
+            if loc and self.st.get_meta(f"location:{s}") != loc["id"]:
+                self.st.set_meta(f"location:{s}", loc["id"])
+                self.st.set_meta(f"baseline:{s}", now_iso())   # historial anterior = otro local: se ignora
+                w = self.st.get_meta("watch", {}) or {}         # vigilancia con precios del local anterior: fuera
+                self.st.set_meta("watch", {k: v for k, v in w.items() if v.get("store") != s})
+                log.info("📍 %s ahora en %s: su historial de precios parte de cero", s, loc["label"])
+        self.st.commit()
         log.info("▶️ ventana %.0f min · runner=%s · %d fuentes · tiendas: %s",
                  minutes, self.runner, len(self.sources), ", ".join(stores))
         try:

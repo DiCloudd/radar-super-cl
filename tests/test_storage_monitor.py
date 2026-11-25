@@ -195,3 +195,23 @@ def test_encrypted_db_is_binary_and_reads_old_text_format(tmp_path, monkeypatch)
     old.write_bytes(Fernet(key).encrypt(gzip.compress(src.read_bytes())))   # formato antiguo (texto)
     backup.decrypt(old, out)
     assert out.read_bytes() == src.read_bytes()
+
+
+def test_location_change_starts_fresh_history():
+    # Al cambiar de local, los precios del local anterior no deben usarse como referencia
+    from radar.publisher import _history
+    st = Storage(":memory:")
+    st.upsert(Product(store="jumbo", sku="1", name="A", price=5000, url="u", found_at="2026-11-20T10:00:00+00:00"))
+    st.upsert(Product(store="jumbo", sku="1", name="A", price=2990, url="u", found_at="2026-11-25T10:00:00+00:00"))
+    st.upsert(Product(store="lider", sku="2", name="B", price=900, url="u", found_at="2026-11-20T10:00:00+00:00"))
+    st.set_meta("baseline:jumbo", "2026-11-24T00:00:00+00:00")
+    h = _history(st, "2026-11-01T00:00:00+00:00")
+    assert [p for _, p in h["jumbo:1"]] == [2990]      # el $5.000 era de otro local: fuera
+    assert [p for _, p in h["lider:2"]] == [900]       # otras cadenas intactas
+
+
+def test_scrapers_use_configured_location_cookies():
+    from radar.scrapers import SCRAPERS
+    assert SCRAPERS["jumbo"].cookies["seller"] == "jumboclj592"
+    assert SCRAPERS["santaisabel"].cookies["seller"] == "santaisabeln687"
+    assert SCRAPERS["acuenta"].cookies["_IL-storeId"] == "782"

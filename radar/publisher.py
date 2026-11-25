@@ -70,8 +70,12 @@ def _compact(r, gid: str | None) -> dict:
 def _history(st: Storage, since: str) -> dict[str, list[tuple[str, float]]]:
     h: dict[str, list[tuple[str, float]]] = defaultdict(list)
     # precios de vendedores externos (marketplace) no sirven de referencia: se excluyen
+    base = {r["k"][9:]: json.loads(r["v"]) for r in st.db.execute("SELECT k, v FROM meta WHERE k LIKE 'baseline:%'")}
     for row in st.db.execute("SELECT product_key, ts, price FROM prices WHERE ts >= ? "
                              "AND COALESCE(marketplace, 0) = 0 ORDER BY id", (since,)):
+        b = base.get(row["product_key"].split(":", 1)[0])
+        if b and row["ts"] < b:
+            continue   # precio de otro local (antes del cambio de tienda): no es comparable
         h[row["product_key"]].append((row["ts"], row["price"]))
     return h
 
@@ -266,7 +270,8 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
             "SELECT source, last_ok, last_count, last_error FROM source_stats WHERE source LIKE ?", (prefix + "-%",))]
         health[store] = {"name": name, "products": n, "blocked": st.get_meta(f"block:{store}"),
                          "sources": srcs, "with_ean": sum(1 for x in rows if x["store"] == store and x["ean"]),
-                         "note": STORE_NOTES.get(store, "")}
+                         "note": STORE_NOTES.get(store, ""),
+                         "loc": __import__("radar.config", fromlist=["LOCATIONS"]).LOCATIONS.get(store, {}).get("label", "")}
     runs = [dict(x) for x in st.db.execute(
         "SELECT started, ended, runner, requests, products, changes, blocked FROM runs ORDER BY id DESC LIMIT 12")]
 

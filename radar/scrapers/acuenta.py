@@ -57,7 +57,8 @@ def _promos(p: dict) -> list[Promo]:
 class AcuentaScraper(Scraper):
     store = "acuenta"
     base_url = "https://www.acuenta.cl"
-    cookies = DEFAULT_STORE
+    cookies = (__import__("radar.config", fromlist=["LOCATIONS"]).LOCATIONS
+               .get("acuenta", {}).get("cookies") or DEFAULT_STORE)
 
     def page_url(self, source: Source, page: int) -> str:
         u = urlparse(source.url)

@@ -15,3 +15,10 @@ SCRAPERS: dict[str, Scraper] = {
 }
 
 __all__ = ["SCRAPERS", "PageResult", "Scraper"]
+
+# Tienda de referencia por cadena (config.LOCATIONS): sus cookies se envían en cada lectura
+from ..config import LOCATIONS as _LOC  # noqa: E402
+
+for _s, _sc in SCRAPERS.items():
+    if _LOC.get(_s, {}).get("cookies"):
+        _sc.cookies = dict(_LOC[_s]["cookies"])

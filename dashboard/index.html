@@ -434,7 +434,8 @@ function mas(){
     <div class="sec"><h2>🩺 Cadenas</h2></div>
     ${Object.entries(h).map(([s, x]) => `<div class="row"><span class="st ${s}">${esc(x.name)}</span>
       <div style="font-size:14px;min-width:0">${x.products ? (x.blocked ? "⏸️ en pausa (" + esc(x.blocked.reason) + ")" : "✅ funcionando") : "⛔ no disponible"}
-      <div class="mut" style="font-size:12.5px">${x.products ? x.products.toLocaleString("es-CL") + " productos · " + x.with_ean.toLocaleString("es-CL") + " con código de barras" : esc(x.note)}</div></div></div>`).join("")}
+      <div class="mut" style="font-size:12.5px">${x.products ? x.products.toLocaleString("es-CL") + " productos · " + x.with_ean.toLocaleString("es-CL") + " con código de barras" : esc(x.note)}</div>
+      ${x.loc ? `<div style="font-size:12.5px">📍 ${esc(x.loc)}</div>` : (x.products ? `<div class="mut" style="font-size:12.5px">📍 tienda por defecto de la web (Santiago)</div>` : "")}</div></div>`).join("")}
     <div class="sec"><h2>📨 Avisos por Telegram</h2></div>
     ${(() => { const tg = D.telegram || {};
       if (tg.linked) return `<div class="row">✅ <div>Telegram vinculado. Te aviso errores de precio y cuando vuelvan las ofertas agotadas.</div></div>`;

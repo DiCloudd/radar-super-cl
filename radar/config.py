@@ -54,6 +54,22 @@ class Source:
         return self.enabled and runner in self.runners
 
 
+# Tienda de referencia por cadena (precios y stock dependen del local). "id" cambia -> el historial
+# de esa cadena parte de cero (los precios de otro local no son comparables con los anteriores).
+LOCATIONS = {
+    "acuenta": {"id": "782", "label": "aCuenta Curicó Terminal (Maule)",
+                "cookies": {"_IL-storeId": "782", "_IL-storeReference": "528"}},
+    "santaisabel": {"id": "santaisabeln687", "label": "Santa Isabel Curicó Camilo Henríquez",
+                    "cookies": {"seller": "santaisabeln687",
+                                "preselected-shipping-method": "seller-1-sla-RetiroenTienda"}},
+    "jumbo": {"id": "jumboclj592", "label": "Jumbo Curicó (Av. O'Higgins 201)",
+              "cookies": {"seller": "jumboclj592", "preselected-shipping-method": "seller-1-sla-ClickalAuto"}},
+    # Unimarc no tiene retiro online en Curicó: el más cercano del Maule es Talca (canal de venta 62)
+    "unimarc": {"id": "sc62", "label": "Unimarc Talca (Maule; Curicó no tiene retiro online)",
+                "cookies": {"co_sc": "62"}},
+    # Lider: la tienda se fija con su cookie de ubicación (pendiente). Alvi: exige iniciar sesión.
+}
+
 # Tiendas que necesitan algo extra para activarse:
 #  - en la nube: la llave de socio (GitHub Secret)
 #  - en el nodo de Chile (tu PC): TOTTUS_BROWSER=1 -> se lee con Edge real (sin evasión)
