@@ -93,15 +93,22 @@ def _record_errors(st: Storage, findings, by_key) -> None:
     now = now_iso()
     current = {f.key: f for f in findings if f.kind in ("error", "godzilla", "pack")}
     open_rows = {r["product_key"]: r for r in st.db.execute("SELECT * FROM errors WHERE ended IS NULL")}
+    # Primera vez que la tabla se guarda de verdad: registrar lo vigente EN SILENCIO (sin ráfaga de
+    # avisos viejos). Desde ahí solo se avisa lo que aparece nuevo.
+    seeded = st.get_meta("alerts_seeded")
+    sent_flag = 0 if seeded else 2
+    if not seeded:
+        st.set_meta("alerts_seeded", now)
     for k, f in current.items():
         if k not in open_rows:
             st.db.execute("INSERT INTO errors(product_key,detected,verdict,price,reference,rule,payload) "
                           "VALUES(?,?,?,?,?,?,?)", (k, now, "sin verificar", f.price, f.reference, f.kind,
                                                     json.dumps({"basis": f.basis}, ensure_ascii=False)))
             p = by_key.get(k) or {}
-            st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload) VALUES(?,?,?,?)", (now, k, f.kind,
+            st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload, sent) VALUES(?,?,?,?,?)", (now, k, f.kind,
                           json.dumps({"name": p.get("name"), "store": p.get("store"), "url": p.get("url"),
-                                      "price": f.price, "why": f.basis, "image": p.get("image")}, ensure_ascii=False)))
+                                      "price": f.price, "why": f.basis, "image": p.get("image")}, ensure_ascii=False),
+                          sent_flag))
     for k, row in open_rows.items():
         if k not in current:
             p = by_key.get(k)
@@ -241,7 +248,7 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         "generated": now_iso(), "health": health, "runs": runs,
         "stores": {s: n for s, n in STORE_NAMES.items() if health[s]["products"]},
         "counts": {"products": len(rows), "compare": len(compare), "offers": len(offers), "drops": len(drops),
-                   "errors": len(fl["error"]), "absurd": len(absurd), "godzilla": len(fl["godzilla"]), "gangas": len(fl["ganga"]),
+                   "errors": len(fl["error"]), "absurd": len(absurd), "watch": len(watchlist), "godzilla": len(fl["godzilla"]), "gangas": len(fl["ganga"]),
                    "by_name": sum(1 for c in compare if c["m"] == "nombre")},
         "core": core, "compare": compare[:1500], "offers": [x["key"] for x in offers[:800]],
         "drops": drops[:300], "errors": [fdict(f) for f in fl["error"]],

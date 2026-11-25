@@ -69,16 +69,18 @@ jobs:
         run: |
           set -e
           test -f data/radar.db || { echo "no hay BD que publicar"; exit 0; }
-          python -m radar.main encrypt data/radar.db data/radar.db.enc
           rm -rf /tmp/site && mkdir -p /tmp/site/db
           if git show origin/gh-pages:robots.txt >/dev/null 2>&1; then
             git archive origin/gh-pages | tar -x -C /tmp/site
           fi
-          cp data/radar.db.enc /tmp/site/db/radar.db.enc
           cp dashboard/* /tmp/site/
           # nunca dejar datos en claro (versiones antiguas de la app los publicaban sin cifrar)
           rm -f /tmp/site/data.json /tmp/site/products.json
+          # 1) exportar PRIMERO: escribe en la BD avisos, errores y la lista de vigilancia...
           python -m radar.main publish /tmp/site || { echo "::warning::falló la exportación de la app"; rm -f /tmp/site/data.json /tmp/site/products.json; }
+          # 2) ...y recién entonces cifrar y guardar la BD (antes se cifraba antes y eso se perdía)
+          python -m radar.main encrypt data/radar.db data/radar.db.enc
+          cp data/radar.db.enc /tmp/site/db/radar.db.enc
           printf 'User-agent: *\nDisallow: /\n' > /tmp/site/robots.txt
           touch /tmp/site/.nojekyll
           cd /tmp/site

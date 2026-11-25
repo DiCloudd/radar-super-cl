@@ -14,6 +14,7 @@ from ..models import Product, Promo
 from .base import PageResult, Scraper, money
 
 _ND = re.compile(r'<script id="__NEXT_DATA__"[^>]*>(.*?)</script>', re.S)
+_WEIGHTED = re.compile(r"\b(granel|al vac[ií]o|aprox\.?|a granel|por kilo|x kg)\b", re.I)
 _PPUM = re.compile(r"\$\s*([\d.]+)\s*x\s*(kg|lt|l|un|ml|g)", re.I)
 
 
@@ -82,10 +83,19 @@ class UnimarcScraper(Scraper):
             unit = {"lt": "l", "l": "l", "kg": "kg", "un": "un"}.get(mm.group(2).lower())
         imgs = p.get("images") or []
         stock_q = s.get("availableQuantity")
+        name = p.get(self.name_field) or p.get("name", "")
+        net = p.get("netContent") or None
+        url_path = p.get("detailUrl") or p.get("slug") or ""
+        # Peso variable (carne "al vacío", pollo "granel", "aprox"): el precio depende del peso de cada
+        # pieza y cambia entre lecturas -> falsos Godzilla. Se marca "≈" para excluirlo de alertas.
+        if _WEIGHTED.search(name) or re.search(r"-kg/p$|granel|aprox", url_path):
+            m = re.search(r"(\d+(?:[.,]\d+)?)\s*(kg|g)\b", name, re.I)
+            net = (f"≈{float(m.group(1).replace(',', '.')) / (1000 if m.group(2).lower() == 'g' else 1):g} kg"
+                   if m else "≈ peso variable")
         return Product(
-            store=self.store, sku=str(p.get("itemId") or p.get("sku")), name=p.get(self.name_field) or p.get("name", ""),
+            store=self.store, sku=str(p.get("itemId") or p.get("sku")), name=name,
             price=public_price, list_price=lp if lp and lp > public_price else None,
-            card_price=card_price, unit_price=unit_price, unit=unit, net_content=p.get("netContent") or None,
+            card_price=card_price, unit_price=unit_price, unit=unit, net_content=net,
             ean=(p.get("ean") or None), brand=p.get("brand"), image=imgs[0] if imgs else None,
             url=self.base_url + (p.get("detailUrl") or p.get("slug") or ""), category=source.category,
             in_stock=avail and (stock_q is None or stock_q > 0), promos=promos,

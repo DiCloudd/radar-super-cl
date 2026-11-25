@@ -142,3 +142,25 @@ def test_safe_wrapper_swallows_errors():
     async def boom():
         raise ValueError("x")
     asyncio.run(Monitor._safe(boom(), "prueba"))   # no lanza
+
+
+def test_first_publish_seeds_silently_then_alerts_new(tmp_path, monkeypatch):
+    # Regresión: errores/avisos/vigilancia se perdían (se exportaba después de cifrar la BD). Al
+    # arreglarlo, la primera vez no debe llegar una ráfaga de avisos viejos.
+    from radar.analysis import Finding
+    from radar.publisher import _record_errors
+    st = Storage(":memory:")
+    by_key = {"a:1": {"name": "x", "store": "jumbo", "url": "u", "image": None, "in_stock": 1, "price": 1}}
+    _record_errors(st, [Finding("a:1", "godzilla", 1, 2, "b", 50)], by_key)
+    assert st.db.execute("SELECT sent FROM alerts").fetchone()["sent"] == 2       # silencioso
+    by_key["a:2"] = dict(by_key["a:1"])
+    _record_errors(st, [Finding("a:1", "godzilla", 1, 2, "b", 50), Finding("a:2", "error", 1, 3, "b", 60)], by_key)
+    rows = st.db.execute("SELECT product_key, sent FROM alerts ORDER BY id").fetchall()
+    assert [(r["product_key"], r["sent"]) for r in rows] == [("a:1", 2), ("a:2", 0)]   # solo el nuevo avisa
+
+
+def test_unimarc_weighted_meat_marked_variable():
+    from radar.scrapers.unimarc import _WEIGHTED
+    assert _WEIGHTED.search("Plateada vacuno Wagyu Beef al vacío 1.6 Kg")
+    assert _WEIGHTED.search("Trutro ala de pollo Super Pollo granel 500 g")
+    assert not _WEIGHTED.search("Arroz grado 1 Tucapel 1 kg")
