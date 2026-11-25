@@ -784,3 +784,31 @@ category = "todos"
 url = "https://super9.cl/products.json"
 max_pages = 10
 runners = ["cloud", "chile", "local"]
+
+# Lider: categorías que faltaban (energéticas como Kem/Red Bull, tragos sin alcohol, cócteles)
+[[source]]
+name = "lider-energeticas"
+store = "lider"
+category = "bebidas"
+url = "https://www.lider.cl/browse/bebidas-y-licores/energ-ticas-y-funcionales/3294424_6026129?sort=price_low"
+fast = true
+fast_every = 2
+fast_offset = 1
+
+[[source]]
+name = "lider-tragos-sin-alcohol"
+store = "lider"
+category = "bebidas"
+url = "https://www.lider.cl/browse/bebidas-y-licores/tragos-sin-alcohol/3294424_15483971?sort=price_low"
+
+[[source]]
+name = "lider-cocteles"
+store = "lider"
+category = "licores"
+url = "https://www.lider.cl/browse/bebidas-y-licores/c-cteles-preparados/3294424_30587707?sort=price_low"
+
+[[source]]
+name = "lider-arma-tu-trago"
+store = "lider"
+category = "licores"
+url = "https://www.lider.cl/browse/bebidas-y-licores/arma-tu-trago/3294424_59156238?sort=price_low"

@@ -164,3 +164,28 @@ def test_unimarc_weighted_meat_marked_variable():
     assert _WEIGHTED.search("Plateada vacuno Wagyu Beef al vacío 1.6 Kg")
     assert _WEIGHTED.search("Trutro ala de pollo Super Pollo granel 500 g")
     assert not _WEIGHTED.search("Arroz grado 1 Tucapel 1 kg")
+
+
+def test_only_imperdibles_go_to_telegram():
+    from radar.analysis import Finding
+    from radar.publisher import imperdibles
+    by_key = {"j:1": {"store": "jumbo", "price": 8490, "marketplace": 0, "in_stock": 1},
+              "l:1": {"store": "lider", "price": 8990, "marketplace": 0, "in_stock": 1},     # promo en todas
+              "j:2": {"store": "jumbo", "price": 2990, "marketplace": 0, "in_stock": 1},
+              "l:2": {"store": "lider", "price": 5890, "marketplace": 0, "in_stock": 1}}     # solo Jumbo la tiene
+    groups = {"j:1": "g1", "l:1": "g1", "j:2": "g2", "l:2": "g2"}
+    members = {"g1": [by_key["j:1"] | {"key": "j:1"}, by_key["l:1"] | {"key": "l:1"}],
+               "g2": [by_key["j:2"] | {"key": "j:2"}, by_key["l:2"] | {"key": "l:2"}]}
+    f = [Finding("j:1", "godzilla", 8490, 14990, "", 43), Finding("j:2", "godzilla", 2990, 5890, "", 49),
+         Finding("x:9", "error", 1, 2, "", 60)]
+    by_key["x:9"] = {"store": "acuenta", "price": 1, "marketplace": 0, "in_stock": 1}
+    assert imperdibles(f, by_key, groups, members) == {"j:2", "x:9"}
+
+
+def test_restock_telegram_only_for_imperdible_reasons():
+    assert watch.worth_telegram("📦 pack a precio de unidad")
+    assert watch.worth_telegram("💥 error")
+    assert watch.worth_telegram("🔥 ganga 52% imperdible")
+    assert not watch.worth_telegram("⚡ bajó 40%")
+    assert not watch.worth_telegram("-35%")
+    assert not watch.worth_telegram("🦖 Godzilla")

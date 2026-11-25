@@ -45,6 +45,11 @@ def build_watchlist(st: Storage, rows: list[dict], flagged: dict[str, str]) -> d
     return watch
 
 
+def worth_telegram(reason: str | None) -> bool:
+    r = reason or ""
+    return r.startswith(("💥", "📦")) or "imperdible" in r
+
+
 def on_reading(st: Storage, key: str, name: str, store: str, url: str, price: float, in_stock: bool,
                image: str | None = None) -> bool:
     """Llamar con cada lectura. Si un producto vigilado vuelve con stock y buen precio -> alerta."""
@@ -58,7 +63,9 @@ def on_reading(st: Storage, key: str, name: str, store: str, url: str, price: fl
         return False   # volvió, pero más caro: no es la oferta
     payload = {"name": name, "store": store, "url": url, "price": price, "was_price": w["price"],
                "reason": w.get("reason"), "since": w["since"], "image": image}
-    st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload) VALUES(?,?,?,?)",
-                  (now_iso(), key, "restock", json.dumps(payload, ensure_ascii=False)))
+    # Telegram solo para imperdibles (errores, packs, Godzilla/gangas imperdibles). El resto: solo app.
+    st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload, sent) VALUES(?,?,?,?,?)",
+                  (now_iso(), key, "restock", json.dumps(payload, ensure_ascii=False),
+                   0 if worth_telegram(w.get("reason")) else 3))
     st.commit()
     return True

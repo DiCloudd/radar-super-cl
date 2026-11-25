@@ -233,3 +233,10 @@ def test_shopify_products_json():
 def test_shopify_empty_catalog():
     s = src("super9", "https://super9.cl/products.json", "todos")
     assert SCRAPERS["super9"].parse_listing('{"products":[]}', s).products == []
+
+
+def test_lider_combina_promos():
+    s = src("lider", "https://www.lider.cl/browse/x/3294424_56657077?sort=price_low")
+    res = SCRAPERS["lider"].parse_listing(load("lider_combina.html.gz"), s)
+    promo = [(p.name, x.text, x.min_qty, x.unit_price) for p in res.products for x in p.promos if x.kind == "mxn"]
+    assert ("2 x $1950", 2, 975) in [(t, n, u) for _, t, n, u in promo]

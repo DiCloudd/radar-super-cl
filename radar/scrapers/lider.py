@@ -113,6 +113,18 @@ class LiderScraper(Scraper):
             txt = (pd or {}).get("text") or (pd or {}).get("description")
             if txt:
                 promos.append(Promo("other", str(txt)[:60]))
+        # promos por cantidad "2 x $3000" / "3 x $2990": vienen como insignia COMBINA
+        badges = it.get("badges") or {}
+        members = list(badges.get("flags") or []) + [m for g in (badges.get("groups") or [])
+                                                      for m in ((g or {}).get("members") or [])]
+        for mem in members:
+            if not ((mem or {}).get("key") == "COMBINA" and mem.get("text")):
+                continue
+            mm = re.search(r"(\d+)\s*x\s*\$?\s*([\d.]+)", mem["text"])
+            if mm:
+                n, tot = int(mm.group(1)), money(mm.group(2))
+                promos.append(Promo("mxn", mem["text"].strip(), min_qty=n,
+                                    unit_price=round(tot / n) if tot and n else None))
         # Lider redondea su $/unidad a pesos por gramo/ml ("$2/Mililitro"): impreciso.
         # Preferimos calcularlo desde el contenido del nombre; su valor queda como respaldo.
         up = unit_price(price, parse_content(it.get("name")))

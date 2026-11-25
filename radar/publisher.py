@@ -88,7 +88,28 @@ def _tg_status(st: Storage) -> dict:
     return {"enabled": s["enabled"], "linked": s["linked"], "code": s["code"]}
 
 
-def _record_errors(st: Storage, findings, by_key) -> None:
+IMPERDIBLE_CROSS = 0.60   # Godzilla/ganga solo avisa si queda <= 60% del más barato en OTRAS cadenas
+IMPERDIBLE_GANGA = 45     # ganga con >= 45% menos que la mediana de otras cadenas
+
+
+def imperdibles(findings, by_key, groups, members) -> set[str]:
+    """Qué hallazgos merecen Telegram. Errores y packs: siempre (reglas ya estrictas).
+    Godzilla: solo si además es MUY barato frente al mismo producto en las otras cadenas (una
+    rebaja que todas las cadenas tienen, o un "precio normal" inflado, no es imperdible)."""
+    out = set()
+    for f in findings:
+        if f.kind in ("error", "pack"):
+            out.add(f.key)
+        elif f.kind == "godzilla":
+            x = by_key[f.key]
+            others = [o["price"] for o in members.get(groups.get(f.key), []) if o["store"] != x["store"]
+                      and not o["marketplace"] and o["in_stock"]]
+            if others and f.price <= IMPERDIBLE_CROSS * min(others):
+                out.add(f.key)
+    return out
+
+
+def _record_errors(st: Storage, findings, by_key, imperdible: set[str] | None = None) -> None:
     """Tabla errors (🏆 salón de la fama): abre los nuevos, cierra los que desaparecieron."""
     now = now_iso()
     current = {f.key: f for f in findings if f.kind in ("error", "godzilla", "pack")}
@@ -108,7 +129,7 @@ def _record_errors(st: Storage, findings, by_key) -> None:
             st.db.execute("INSERT INTO alerts(ts, product_key, kind, payload, sent) VALUES(?,?,?,?,?)", (now, k, f.kind,
                           json.dumps({"name": p.get("name"), "store": p.get("store"), "url": p.get("url"),
                                       "price": f.price, "why": f.basis, "image": p.get("image")}, ensure_ascii=False),
-                          sent_flag))
+                          sent_flag if (imperdible is None or k in imperdible) else 3))   # 3 = solo app
     for k, row in open_rows.items():
         if k not in current:
             p = by_key.get(k)
@@ -150,7 +171,8 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
     # Auditada con 64 parejas reales de la nube (tests/fixtures/audit_pack_pairs.json): con stock -> aviso
     findings += [Finding(a.key, "pack", a.price, a.single_price, a.basis, a.pct)
                  for a in absurd if by_key[a.key]["in_stock"]]
-    _record_errors(st, findings, by_key)
+    imper = imperdibles(findings, by_key, groups, members)
+    _record_errors(st, findings, by_key, imper)
 
     # comparables ordenados por ahorro
     compare = []
@@ -192,8 +214,13 @@ def export(st: Storage, out: Path, active_days: int = 3, extra: dict | None = No
         x = by_key[f.key]
         print(f"AUDIT-GODZILLA {x['store']} | {x['name'][:60]} | ${round(f.reference)} -> ${round(f.price)} | {x['url']}")
     from . import watch as watchmod
-    flagged = {f.key: {"error": "💥 error", "godzilla": "🦖 Godzilla", "ganga": "🔥 ganga", "pack": "📦 pack a precio de unidad"}[f.kind]
-               for f in findings}
+    def _reason(f):
+        if f.kind == "godzilla":
+            return "🦖 Godzilla imperdible" if f.key in imper else "🦖 Godzilla"
+        if f.kind == "ganga":
+            return f"🔥 ganga {f.pct:.0f}%" + (" imperdible" if f.pct >= IMPERDIBLE_GANGA else "")
+        return {"error": "💥 error", "pack": "📦 pack a precio de unidad"}[f.kind]
+    flagged = {f.key: _reason(f) for f in findings}
     flagged.update({a.key: "📦 pack a precio de unidad" for a in absurd})
     flagged.update({d["k"]: f"⚡ bajó {d['pct']}%" for d in drops if d["k"] not in flagged})
     # las bajadas solo se calculan con stock; para vigilar, también las que quedaron agotadas tras bajar
