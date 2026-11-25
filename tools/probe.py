@@ -62,7 +62,8 @@ def main() -> int:
         raw = default.read_text(encoding="utf-8") if default.exists() else ""
     items = [u for u in raw.split() if u.startswith("http")]
     results = []
-    with httpx.Client(http2=True, follow_redirects=True, timeout=25, headers=BASE_HEADERS) as c:
+    cookies = dict(kv.split("=", 1) for kv in os.environ.get("PROBE_COOKIES", "").split(";") if "=" in kv)
+    with httpx.Client(http2=True, follow_redirects=True, timeout=25, headers=BASE_HEADERS, cookies=cookies) as c:
         for item in items:
             url, _, ref = item.partition("|")
             headers = {"Referer": ref} if ref else {}
@@ -80,6 +81,9 @@ def main() -> int:
                     "server": r.headers.get("server", ""),
                 }
                 res.update(analyze(text))
+                m = re.search(r'"location":\{"pickupStore":"(\d+)"[^}]*"city":"([^"]*)"', text)
+                if m:
+                    res["store"] = f"{m.group(1)} {m.group(2)}"
                 (out / (safe_name(url) + ".txt")).write_text(text, encoding="utf-8")
             except Exception as e:  # noqa: BLE001
                 res = {"url": url, "error": f"{type(e).__name__}: {e}"[:200]}
